@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drone 3D Editor</title>
+
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+  <div id="ui">
+    <button id="open-drawer">Review</button>
+    <button id="open-add-drawer">Conditions</button>
+  </div>
+
+  <div id="drawer">
+    <div id="drawer-header">
+      <span>MAVLink Viewer</span>
+      <button id="drawer-close">×</button>
+    </div>
+    <div id="drawer-content"></div>
+  </div>
+
+  <div id="add-drawer">
+    <div id="drawer-header">
+      <span>Anomaly Detection Management</span>
+      <button id="add-drawer-close">×</button>
+    </div>
+
+    <div id="drawer-content">
+      <div id="existing-conditions">
+        <div class="accordion-header">
+          <span>Configured Conditions</span>
+          <button id="reload-conditions-btn" title="Reload">⟳</button>
+        </div>
+        <div id="existing-condition-list" class="accordion-body"></div>
+
+        <button id="add-condition-btn">
+          + Add Condition
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="seek-wrapper">
+    <div id="seek-track">
+      <div id="seek-progress"></div>
+      <div id="seek-thumb"></div>
+      <div id="seek-markers"></div>
+    </div>
+    <div id="timeLabel">0 / 0</div>
+  </div>
+
+  <div id="alert-container"></div>
+
+  <script type="module" src="./js/editor/main.js"></script>
+</body>
+</html>

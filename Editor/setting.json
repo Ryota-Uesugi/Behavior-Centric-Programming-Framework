@@ -1,0 +1,80 @@
+[
+  {
+    "name": "test5836",
+    "expression": "abs( RANGEFINDER.distance ) > 0.25",
+    "ast": {
+      "type": "binary",
+      "op": ">",
+      "return_type": "boolean",
+      "left": {
+        "type": "func",
+        "name": "abs",
+        "category": "calc_func",
+        "return_type": "number",
+        "args": [
+          {
+            "type": "value",
+            "messageType": "RANGEFINDER",
+            "field": "distance",
+            "return_type": "number"
+          }
+        ]
+      },
+      "right": {
+        "type": "constant",
+        "value_type": "number",
+        "value": 0.25,
+        "return_type": "number"
+      }
+    },
+    "notify": {
+      "mode": "on_change",
+      "interval": 0
+    },
+    "dependencies": [
+      "RANGEFINDER.distance"
+    ],
+    "is_time_sensitive": false
+  },
+  {
+    "name": "test8132",
+    "expression": "timer( abs( RANGEFINDER.distance ), 2 )",
+    "ast": {
+      "type": "func",
+      "name": "timer",
+      "category": "time_func",
+      "return_type": "number",
+      "window": 2,
+      "args": [
+        {
+          "type": "func",
+          "name": "abs",
+          "category": "calc_func",
+          "return_type": "number",
+          "args": [
+            {
+              "type": "value",
+              "messageType": "RANGEFINDER",
+              "field": "distance",
+              "return_type": "number"
+            }
+          ]
+        },
+        {
+          "type": "constant",
+          "value_type": "number",
+          "value": 2,
+          "return_type": "number"
+        }
+      ]
+    },
+    "notify": {
+      "mode": "periodic",
+      "interval": 2
+    },
+    "dependencies": [
+      "RANGEFINDER.distance"
+    ],
+    "is_time_sensitive": true
+  }
+]

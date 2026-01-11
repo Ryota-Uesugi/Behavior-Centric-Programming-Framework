@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Blocky Expression UI</title>
+<link rel="stylesheet" href="./css/block.css">
+<link rel="icon" href="./favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+<button id="drawer-toggle">≪</button>
+<div id="drawer"></div>
+<div id="field"></div>
+
+<div id="expression-area">Send</div>
+<div id="storage-area"></div>
+<div id="trash">Trash</div>
+
+<div id="storage-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Stored List</h3>
+    </div>
+    <div class="modal-body">
+      <div id="storage-list-container"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-close" onclick="closeStorageModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="expression-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Check Expression & Send</h3>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Expression Name:</p>
+      <input type="text" id="expression-name" placeholder="ex : flight data" spellcheck="false">
+
+      <p style="font-size: 12px; color: #666; margin-top: 15px; margin-bottom: 8px;">Generated Expression:</p>
+      <textarea id="expression-textarea" spellcheck="false"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-close" onclick="closeModal()">Cancel</button>
+      <button class="btn-send" onclick="sendExpression()">Send Expression</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/module/mermaid.min.js"></script> 
+<script src="./js/calc/config.js"></script> 
+<script src="./js/calc/blocks.js"></script>  
+<script src="./js/calc/drop.js"></script>   
+<script src="./js/calc/drag.js"></script>   
+<script src="./js/calc/drawer.js"></script> 
+<script src="./js/calc/expression.js"></script> 
+<script src="./js/calc/storage.js"></script> 
+</body>
+</html>
