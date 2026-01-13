@@ -1,12 +1,12 @@
-/* ================= グローバル変数定義 ================= */
+/* ================= Global Variable Definitions ================= */
 const field = document.getElementById('field');
 let blocks = [];
 let blockGroups = new Map();
 let groupBoxes = new Map();
-let dragInfo = null; // drag.jsでも参照
-let pendingExpression = ''; // config.js/modalで使用
+let dragInfo = null; // Also referenced in drag.js
+let pendingExpression = ''; // Used in config.js/modal
 
-// ツールチップ
+// Tooltip
 let globalTooltip = document.getElementById('global-tooltip');
 if (!globalTooltip) {
     globalTooltip = document.createElement('div');
@@ -14,17 +14,17 @@ if (!globalTooltip) {
     document.body.appendChild(globalTooltip);
 }
 
-// マウス位置（複製用）
+// Mouse position (for duplication)
 let lastMousePos = { x: 0, y: 0 };
 window.addEventListener('mousemove', e => {
     lastMousePos.x = e.clientX;
     lastMousePos.y = e.clientY;
 }, true);
 
-/* ================= ブロック生成コア ================= */
+/* ================= Block Creation Core ================= */
 
 /**
- * 汎用ブロック生成
+ * General Block Creation
  */
 function createBlock(type, value = "", addToField = true, op = '', customExpr = '') {
     const block = document.createElement("div");
@@ -34,13 +34,13 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
     block.style.position = "absolute";
     block.style.zIndex = 1000;
 
-    // --- A. 演算子・条件・括弧 ---
+    // --- A. Operators, Conditions, Parentheses ---
     if (["condition", "operator", "bit_operator", "parenthesis"].includes(type)) {
         block.classList.add(`${type.replace('_', '-')}-block`);
         block.textContent = op || value;
         block.dataset.value = op || value;
 
-    // --- B. 数値 ---
+    // --- B. Numbers ---
     } else if (type === "number") {
         block.classList.add("number-block");
         block.innerHTML = `<span>Number</span>`;
@@ -52,7 +52,7 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
         input.addEventListener("mousedown", (e) => e.stopPropagation());
         block.appendChild(input);
 
-    // --- C. 文字列 (Name) ---
+    // --- C. Strings (Name) ---
     } else if (type === "string") {
         block.classList.add("string-block"); 
         block.innerHTML = `<span>Text</span>`; 
@@ -66,7 +66,7 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
         input.addEventListener("mousedown", (e) => e.stopPropagation());
         block.appendChild(input);
 
-    // --- [NEW] Storage (保存された式) ---
+    // --- [NEW] Storage (Saved Expressions) ---
     } else if (type === "storage") {
         block.classList.add("storage-block");
         block.dataset.expr = customExpr;
@@ -83,7 +83,7 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
         block.textContent = value || 'setting';
         block.dataset.configured = "false";
 
-    // --- E. 関数系 (calc / time / export / control / flow) ---
+    // --- E. Functions (calc / time / export / control / flow) ---
     } else if (["calc_func", "time_func", "export_func", "control_func", "flow_control"].includes(type)) {
         
         let className = 'calc-func-block';
@@ -96,20 +96,20 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
         block.style.display = "inline-flex";
         block.style.alignItems = "center";
 
-        // FUNC_CONFIG参照
-        // [変更] デフォルトを配列形式に変更
+        // Reference FUNC_CONFIG
+        // [Change] Changed default to array format
         const conf = (typeof FUNC_CONFIG !== 'undefined' && FUNC_CONFIG[value]) 
                       ? FUNC_CONFIG[value] 
                       : { args: ["arg1", "arg2"] };
         
-        // 安全策：もし旧仕様(数値)が混ざっていても配列化して処理する
+        // Safety: Convert to array if legacy format (number) is mixed in
         const argList = Array.isArray(conf.args) ? conf.args : Array(conf.args).fill("arg");
 
         const prefix = document.createElement('span');
         prefix.textContent = `${value}( `;
         block.appendChild(prefix);
 
-        // [変更] argListの長さでループ
+        // [Change] Loop by argList length
         argList.forEach((argName, i) => {
             if (i > 0) {
                 const comma = document.createElement('span');
@@ -120,9 +120,9 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
             const slot = document.createElement("div");
             slot.className = "slot";
             
-            // [追加] 引数名をデータ属性として保持（CSSでの表示やバリデーションに使用可能）
+            // [Add] Keep argument name as data attribute (can be used for CSS display or validation)
             slot.dataset.argName = argName;
-            slot.title = argName; // マウスオーバーで引数名を表示
+            slot.title = argName; // Show argument name on mouseover
 
             const isLastArg = (i === argList.length - 1);
             if (type === "time_func" && isLastArg) {
@@ -138,7 +138,7 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
         block.appendChild(suffix);
     }
 
-    // ドラッグ開始
+    // Start drag
     block.addEventListener("mousedown", e => {
         if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
         if (e.button === 0 && typeof startDrag === 'function') {
@@ -154,7 +154,7 @@ function createBlock(type, value = "", addToField = true, op = '', customExpr = 
 }
 
 /**
- * スロットへのイベント登録
+ * Register Slot Events
  */
 let lastHoveredSlot = null;
 
@@ -168,7 +168,7 @@ function setupSlotEvents(slot) {
         }
         lastHoveredSlot = slot;
 
-        // バリデーション時にslot情報（argNameなど）も参照可能になります
+        // Slot info (argName etc.) becomes available during validation
         const validation = (typeof validateSlotDrop === 'function') 
                            ? validateSlotDrop(dragInfo.group, slot) 
                            : { ok: false, reason: "Loading..." };
@@ -203,8 +203,8 @@ function setupSlotEvents(slot) {
     });
 }
 
-/* ================= 複製・削除・グルーピング管理 ================= */
-// (以下の関数群に変更はありませんが、完全性のために維持しています)
+/* ================= Duplication, Deletion, Grouping Management ================= */
+// (No changes to the following functions, but kept for completeness)
 
 function duplicateBlock(original, targetX = null, targetY = null) {
     if (!original || !original.dataset) return null;
@@ -239,7 +239,7 @@ function duplicateBlock(original, targetX = null, targetY = null) {
         clone.textContent = original.textContent;
     }
 
-    // 関数系の再帰複製
+    // Recursive duplication of functions
     if (["calc_func", "time_func", "export_func", "control_func", "flow_control"].includes(type)) {
         const origSlots = original.querySelectorAll(':scope > .slot');
         const cloneSlots = clone.querySelectorAll(':scope > .slot');
@@ -281,7 +281,7 @@ function removeBlock(b) {
 }
 
 function clearAllBlocks() {
-    if (blocks.length === 0 || !confirm("フィールド上のすべてのブロックを削除しますか？")) return;
+    if (blocks.length === 0 || !confirm("Are you sure you want to delete all blocks on the field?")) return;
     [...blocks].forEach(block => {
         if (block && block.parentNode === field) removeBlock(block);
     });
@@ -333,7 +333,7 @@ window.addEventListener('keydown', e => {
     }
 });
 
-/* ================= 文字列化ユーティリティ ================= */
+/* ================= Stringification Utility ================= */
 
 function getBlockExpression(block) {
     if (!block || !block.dataset) return '';
@@ -373,7 +373,7 @@ function getBlockExpression(block) {
     return block.dataset.op || block.dataset.value || block.textContent.trim();
 }
 
-/* ================= グループボックス描画 ================= */
+/* ================= Group Box Drawing ================= */
 
 function drawGroupBox(group){
     if(group.length <= 1) { 

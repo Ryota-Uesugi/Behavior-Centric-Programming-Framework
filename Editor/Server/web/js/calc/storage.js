@@ -1,4 +1,4 @@
-// ▼▼▼ 設定: 上限数 ▼▼▼
+// ▼▼▼ Config: Max Limit ▼▼▼
 const STORAGE_LIMIT = 20;
 
 window.storageList = [];
@@ -20,14 +20,14 @@ function updateStorageArea(group) {
         newId++;
     }
 
-    // 3. セットで保存
+    // 3. Save entry
     window.storageList.push({ id: newId, expr: expr });
     window.storageList.sort((a, b) => a.id - b.id);
     group.forEach(removeBlock);
 
     updateStorageCounter();
 
-    // ドロワー更新
+    // Update drawer
     if (window.renderDrawerStorage) {
         window.renderDrawerStorage(window.storageList);
     }
@@ -39,14 +39,14 @@ function updateStorageCounter() {
 
     const count = window.storageList.length;
 
-    // 1. テキスト更新
+    // 1. Update text
     if (count === 0) {
         storageArea.textContent = 'Bank';
     } else {
         storageArea.textContent = `Bank \n ${count}/${STORAGE_LIMIT}`;
     }
 
-    // 2. 満杯ならクラスをつける（色はCSSで管理）
+    // 2. Add class if limit reached (color managed via CSS)
     if (count >= STORAGE_LIMIT) {
         storageArea.classList.add('limit-reached');
     } else {
@@ -70,7 +70,7 @@ window.closeStorageModal = function(){
     modal.classList.add('hidden');
 };
 
-// モーダルを開く
+// Open modal
 window.openStorageModal = function(){
     const modal = document.getElementById('storage-modal');
     const modalBody = modal.querySelector('.modal-body');
@@ -96,13 +96,13 @@ window.openStorageModal = function(){
     renderStorageList(listContainer);
 };
 
-// リスト描画
+// Render list
 function renderStorageList(container) {
     container.innerHTML = '';
 
     if (window.storageList.length === 0) {
         const emptyMsg = document.createElement('div');
-        emptyMsg.textContent = "No stored expressions.";
+        emptyMsg.textContent = "No Banked expressions.";
         Object.assign(emptyMsg.style, { padding: '20px', color: '#999', textAlign: 'center', fontSize: '12px' });
         container.appendChild(emptyMsg);
         return;
@@ -128,7 +128,7 @@ function renderStorageList(container) {
             }
         };
 
-        // スクロール時に判定を実行
+        // Execute check on scroll
         textDiv.addEventListener('scroll', updateFade);
         
         const delBtn = document.createElement('button');

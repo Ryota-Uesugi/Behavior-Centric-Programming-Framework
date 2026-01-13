@@ -1,17 +1,17 @@
-/* ================= ドラッグ＆操作インタラクション ================= */
+/* ================= Drag & Operation Interaction ================= */
 
 let insertIndicator = null;
 let isDragging = false;
 let dragX = 0;
 let dragY = 0;
 
-// キャッシュ
+// Cache
 let cachedSlotData = [];
 let cachedGroupData = [];
 let cachedFieldRect = null;
 let dragLoopId = null;
 
-// Diffing用
+// For Diffing
 let lastActiveSlot = null; 
 let lastIndicatorState = { show: false, left: -1, top: -1, height: -1 };
 
@@ -23,7 +23,7 @@ let lastFrameTime = 0;
 function startDrag(e, block) {
     if (dragInfo) return;
 
-    // ルートブロック特定
+    // Identify root block
     let rootBlock = block;
     let current = block;
     while (current && current !== field) {
@@ -50,7 +50,7 @@ function startDrag(e, block) {
         offsetY: e.clientY - b.offsetTop
     }));
 
-    // グループボックス制御
+    // Group box control
     let activeBoxData = null;
     const boxEl = groupBoxes.get(group);
     if (boxEl) {
@@ -66,7 +66,7 @@ function startDrag(e, block) {
 
     createInsertIndicator();
 
-    // 座標キャッシュ作成
+    // Create coordinate cache
     cachedSlotData = Array.from(document.querySelectorAll('.slot')).map(slot => ({
         el: slot,
         rect: slot.getBoundingClientRect()
@@ -80,7 +80,7 @@ function startDrag(e, block) {
     blockGroups.forEach((g) => {
         if (seenGroups.has(g) || g.some(b => draggingBlockSet.has(b))) return;
         seenGroups.add(g);
-        // 関数単体の場合は挿入ターゲットにしない
+        // Do not set as insertion target for standalone functions
         if (g.length === 1 && (g[0].dataset.type === 'calc_func' || g[0].dataset.type === 'time_func')) return;
 
         const tops = g.map(b => b.offsetTop);
@@ -133,7 +133,7 @@ function updateDragLoop(timestamp) {
     if (elapsed < FRAME_INTERVAL) return;
     lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
 
-    // 移動
+    // Move
     dragInfo.offsets.forEach(info => {
         info.block.style.left = `${dragX - info.offsetX}px`;
         info.block.style.top  = `${dragY - info.offsetY}px`;
@@ -145,7 +145,7 @@ function updateDragLoop(timestamp) {
         bd.el.style.top  = `${dragY - bd.offsetY}px`;
     }
     
-    // インジケータ計算
+    // Calculate indicator
     updateInsertIndicator(dragX, dragY, dragInfo.group);
 }
 
@@ -167,7 +167,7 @@ function onMouseUp(ev) {
         dragInfo.activeBoxData.el.style.pointerEvents = ''; 
     }
 
-    // クリーンアップ
+    // Cleanup
     cachedSlotData = [];
     cachedGroupData = [];
     cachedFieldRect = null;
@@ -179,12 +179,12 @@ function onMouseUp(ev) {
     
     currentGroup.forEach(b => b.classList.remove("dragging"));
 
-    // ★ ここで drop.js の handleDrop を呼ぶ
+    // ★ Call handleDrop from drop.js here
     handleDrop(ev, currentGroup);
 
     if (typeof updateAllGroupBoxes === 'function') updateAllGroupBoxes();
 
-    // MAVLink設定が必要なら開く
+    // Open MAVLink configuration if needed
     if (currentGroup[0].dataset.type === 'mavlink' && currentGroup[0].dataset.configured === 'false') {
         if(typeof openMavlinkConfigForm === 'function') openMavlinkConfigForm(currentGroup[0]);
     }
@@ -198,7 +198,7 @@ function onMouseUp(ev) {
 }
 
 // ================================
-// インジケータ (DOM操作)
+// Indicator (DOM operations)
 // ================================
 function createInsertIndicator(){
     if(!insertIndicator){
@@ -232,7 +232,7 @@ function isInsideTimeFunc(el) {
 function updateInsertIndicator(x, y, draggedGroup) {
     if (!dragInfo) return;
     
-    // 1. スロットへの埋め込み判定
+    // 1. Check for slot insertion
     let newActiveSlot = null;
     for (const data of cachedSlotData) {
         const slot = data.el;
@@ -268,7 +268,7 @@ function updateInsertIndicator(x, y, draggedGroup) {
         return;
     }
 
-    // 2. グループ間の挿入判定
+    // 2. Check for insertion between groups
     if (!cachedFieldRect) return;
     
     const relX = x - cachedFieldRect.left;

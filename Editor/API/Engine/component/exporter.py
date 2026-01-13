@@ -8,12 +8,12 @@ from matplotlib.collections import LineCollection
 from collections import deque
 from logger import logger
 
-# --- 設定 ---
+# --- Configuration ---
 LOG_DIR = "./logs"
-GRAPH_HISTORY_LEN = 100  # 保持するデータ点数（兼グラフの横幅固定値）
+GRAPH_HISTORY_LEN = 100  # Number of data points to keep (also the fixed width of the graph)
 
-# --- グローバル変数 ---
-# キー=(filename, series_name), 値=deque( (value, color) )
+# --- Global Variables ---
+# Key=(filename, series_name), Value=deque( (value, color) )
 _BUFFERS = {} 
 
 def _ensure_dir(directory):
@@ -22,7 +22,7 @@ def _ensure_dir(directory):
 
 def write_csv_log(value, label, filename):
     """
-    CSVログ出力
+    Output CSV log.
     """
     _ensure_dir(LOG_DIR)
     filepath = os.path.join(LOG_DIR, filename + ".csv")
@@ -42,22 +42,22 @@ def write_csv_log(value, label, filename):
 
 def send_graph_data(value, series_name, filename, color):
     """
-    データをバッファに追加し、指定されたファイル名でグラフ画像を保存します。
-    データ点ごとに色を記録し、途中での色変更を反映します。
+    Adds data to the buffer and saves the graph image with the specified filename.
+    Records the color for each data point to reflect color changes during the process.
     """
     global _BUFFERS
     
     try:
-        # 1. データの蓄積 (値と色をペアで保存)
+        # 1. Accumulate data (save value and color as a pair)
         key = (filename, series_name)
         
         if key not in _BUFFERS:
             _BUFFERS[key] = deque(maxlen=GRAPH_HISTORY_LEN)
         
-        # 値と色をセットで保存
+        # Save value and color as a set
         _BUFFERS[key].append((value, color))
         
-        # 2. グラフ描画と保存
+        # 2. Plot and save graph
         _ensure_dir(LOG_DIR)
         save_path = os.path.join(LOG_DIR, filename + ".png")
 
@@ -66,15 +66,15 @@ def send_graph_data(value, series_name, filename, color):
             fig, ax = plt.subplots(figsize=(6, 4))
             plotted_something = False
             
-            # --- 描画処理 ---
+            # --- Plotting Process ---
             for (f_name, s_name), data_deque in _BUFFERS.items():
                 if f_name != filename:
                     continue
 
-                # データをリスト化して分解
+                # Convert data to list for processing
                 data_list = list(data_deque)
                 if len(data_list) < 2:
-                    # 点が2つ未満の場合は点でプロット
+                    # Plot as points if there are fewer than 2 points
                     y_vals = [d[0] for d in data_list]
                     c_vals = [d[1] for d in data_list]
                     x_vals = range(len(y_vals))
@@ -82,25 +82,25 @@ def send_graph_data(value, series_name, filename, color):
                     plotted_something = True
                     continue
 
-                # --- LineCollection用データの作成 ---
+                # --- Create data for LineCollection ---
                 y_vals = [d[0] for d in data_list]
                 c_vals = [d[1] for d in data_list]
                 x_vals = list(range(len(y_vals)))
 
-                # 線分リスト作成: [(x0, y0), (x1, y1)], ...
+                # Create segment list: [(x0, y0), (x1, y1)], ...
                 points = list(zip(x_vals, y_vals))
                 segments = []
                 segment_colors = []
 
                 for i in range(len(points) - 1):
                     segments.append([points[i], points[i+1]])
-                    segment_colors.append(c_vals[i]) # 始点の色を採用
+                    segment_colors.append(c_vals[i]) # Use the color of the starting point
 
-                # マルチカラーの線を作成
+                # Create multicolor line
                 lc = LineCollection(segments, colors=segment_colors, linewidth=1.5, label=s_name)
                 ax.add_collection(lc)
                 
-                # 凡例用のダミープロット
+                # Dummy plot for legend
                 ax.plot([], [], color=c_vals[-1], label=s_name)
                 
                 plotted_something = True
@@ -112,13 +112,13 @@ def send_graph_data(value, series_name, filename, color):
                 ax.grid(True)
                 ax.legend(loc='upper right')
                 
-                # Y軸はデータに合わせてオートスケール
+                # Autoscale Y-axis based on data
                 ax.autoscale_view(scalex=False, scaley=True)
                 
-                # 【修正】X軸の範囲を 0 ～ GRAPH_HISTORY_LEN に固定
+                # [Fix] Fix X-axis range from 0 to GRAPH_HISTORY_LEN
                 ax.set_xlim(0, GRAPH_HISTORY_LEN)
                 
-                # Y軸のみ余白を持たせる
+                # Add margins only to the Y-axis
                 ax.margins(x=0, y=0.1)
 
                 plt.tight_layout()

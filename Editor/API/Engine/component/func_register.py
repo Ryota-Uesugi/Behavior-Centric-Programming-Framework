@@ -1,11 +1,11 @@
 from .func_handlers import CalcHandlers, TimeHandlers, DroneHandlers, ExportHandlers
 
-# "関数名": (ハンドラメソッド, 引数の自動評価フラグ)
-# auto_eval=True:  args には評価済みの値（数値やbool）が入ってくる。
-# auto_eval=False: args には ASTノード がそのまま入ってくる（遅延評価や履歴参照用）。
+# Format: "Function Name": (Handler Method, Auto-Eval Flag)
+# auto_eval=True:  'args' contains evaluated values (numbers, bools, etc.).
+# auto_eval=False: 'args' contains raw AST nodes (used for lazy evaluation or history lookup).
 
 FUNCTION_REGISTRY = {
-    # --- 算術・計算 (Auto Eval: True) ---
+    # --- Arithmetic / Calculation (Auto Eval: True) ---
     "abs":        (CalcHandlers.execute, True),
     "round":      (CalcHandlers.execute, True),
     "ceil":       (CalcHandlers.execute, True),
@@ -17,7 +17,7 @@ FUNCTION_REGISTRY = {
     "within":     (CalcHandlers.execute, True),
     "hysteresis": (CalcHandlers.execute, True),
 
-    # --- 時間・履歴統計 (Auto Eval: False -> ノード情報が必要) ---
+    # --- Time / History Statistics (Auto Eval: False -> Node info required) ---
     "average":    (TimeHandlers.execute, False),
     "sum":        (TimeHandlers.execute, False),
     "min":        (TimeHandlers.execute, False),
@@ -28,9 +28,8 @@ FUNCTION_REGISTRY = {
     "rate":       (TimeHandlers.execute, False),
     "trend":      (TimeHandlers.execute, False),
     "prev":       (TimeHandlers.execute, False),
-    "timer":      (TimeHandlers.execute, False),
 
-    # --- ドローン制御 (Auto Eval: True) ---
+    # --- Drone Control (Auto Eval: True) ---
     "takeoff":      (DroneHandlers.execute, True),
     "land":         (DroneHandlers.execute, True),
     "arm":          (DroneHandlers.execute, True),

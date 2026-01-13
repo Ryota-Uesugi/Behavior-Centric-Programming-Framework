@@ -1,17 +1,16 @@
 import math
 import statistics
-import time
 from logger import logger
 from .exporter import write_csv_log, send_graph_data
 from pymavlink import mavutil
 
 # ==========================================
-# 共通インターフェース: 
+# Common Interface: 
 # def handler(evaluator, name, args, node, now):
 # ==========================================
 
 class CalcHandlers:
-    """数値計算・論理計算系（引数は事前に評価済み）"""
+    """Numerical/Logical calculation handlers (arguments are pre-evaluated)"""
     @staticmethod
     def execute(evaluator, name, args, node, now):
         try:
@@ -44,21 +43,11 @@ class CalcHandlers:
             return None
 
 class TimeHandlers:
-    """時間・履歴統計系（引数は生のNode）"""
+    """Time/History statistics handlers (arguments are raw Nodes)"""
     @staticmethod
     def execute(evaluator, name, raw_args, node, now):
         target_node = raw_args[0]
         window = node.get("window", 1.0)
-
-        if name == "timer":
-            func_id = f"timer_{id(node)}"
-            last_fire = evaluator.states.get(func_id, 0)
-            if now - last_fire >= window:
-                res = evaluator.eval(target_node, now)
-                if res is not None:
-                    evaluator.states[func_id] = now
-                return res
-            return None
 
         history = evaluator._get_window_history(target_node, now, window)
         if not history: return None
@@ -104,12 +93,12 @@ class TimeHandlers:
         return None
 
 class DroneHandlers:
-    """ドローン制御系（引数は評価済み）"""
+    """Drone control handlers (arguments are pre-evaluated)"""
     @staticmethod
     def execute(evaluator, name, args, node, now):
         if not evaluator.drone: return False
         
-        # --- クールダウン管理 ---
+        # --- Cooldown Management ---
         is_oneshot = name in ["takeoff", "land", "arm", "disarm", "set_mode", "command","set_velocity","goto"]
         
         if is_oneshot:
@@ -119,7 +108,7 @@ class DroneHandlers:
             if (now - last_exec) <= 3.0: 
                 return False
 
-        # --- コマンド実行（DroneControllerの改善メソッドを呼び出し） ---
+        # --- Command Execution (Calls improved DroneController methods) ---
         success = False
         try:
             if name == "takeoff":
@@ -130,16 +119,16 @@ class DroneHandlers:
                 success = True
             
             elif name == "arm":
-                # 改良した待機付き ARM メソッドを使用
+                # Use improved ARM method with wait
                 success = evaluator.drone.arm_and_wait()
             
             elif name == "disarm":
-                # MAV_CMD_COMPONENT_ARM_DISARM = 400, p1=0 は Disarm
+                # MAV_CMD_COMPONENT_ARM_DISARM = 400, p1=0 is Disarm
                 evaluator.drone.execute_command(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=0)
                 success = True
             
             elif name == "set_mode":
-                # 改良した待機付き set_mode メソッドを使用
+                # Use improved set_mode method with wait
                 success = evaluator.drone.set_mode(str(args[0]))
             
             elif name == "set_velocity":
@@ -164,7 +153,7 @@ class DroneHandlers:
                 evaluator.drone.execute_command(cmd_id, *params)
                 success = True
 
-            # 実行成功時のクールダウン更新
+            # Update cooldown on successful execution
             if success and is_oneshot:
                 logger.info(f"Drone Action Success: {name} {args}")
                 cooldowns[func_id] = now
@@ -180,7 +169,7 @@ class DroneHandlers:
         return success
 
 class ExportHandlers:
-    """外部出力系"""
+    """External export handlers"""
     @staticmethod
     def execute(evaluator, name, args, node, now):
         if name == "export_txt":

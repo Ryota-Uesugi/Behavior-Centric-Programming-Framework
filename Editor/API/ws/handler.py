@@ -13,7 +13,7 @@ async def websocket_handler(request):
     app_state.websockets.add(ws)
     app_state.stream_active = True
 
-    logger.info("WebSocket 接続確立: %s (接続数=%d)", peer, len(app_state.websockets))
+    logger.info("WebSocket connection established: %s (connections=%d)", peer, len(app_state.websockets))
 
     await ws.send_str(json.dumps({
         "type": "settings",
@@ -23,14 +23,14 @@ async def websocket_handler(request):
     try:
         async for msg in ws:
             if msg.type == WSMsgType.TEXT:
-                # クライアントからのコマンドが必要な場合はここに記述
+                # Handle commands from the client here if necessary
                 pass
             elif msg.type == WSMsgType.ERROR:
-                logger.error("WebSocket エラー: %s exception=%s", peer, ws.exception())
+                logger.error("WebSocket error: %s exception=%s", peer, ws.exception())
     finally:
         app_state.websockets.discard(ws)
         if not app_state.websockets:
             app_state.stream_active = False
-        logger.info("WebSocket 切断: %s", peer)
+        logger.info("WebSocket disconnected: %s", peer)
 
     return ws

@@ -6,7 +6,7 @@ from logger import logger
 
 
 def replay_log(app_state):
-    logger.info("リプレイ処理を開始します")
+    logger.info("Starting replay process")
 
     log_path = (
         CONNECTION_STRING
@@ -14,10 +14,10 @@ def replay_log(app_state):
         else os.path.join(LOG_DIR, CONNECTION_STRING)
     )
 
-    logger.info("リプレイログパス: %s", log_path)
+    logger.info("Replay log path: %s", log_path)
 
     if not os.path.isfile(log_path):
-        logger.error("リプレイログが存在しません")
+        logger.error("Replay log does not exist")
         app_state.should_run = False
         return
 
@@ -25,18 +25,18 @@ def replay_log(app_state):
         with open(log_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
-        logger.exception("リプレイログの読み込みに失敗しました")
+        logger.exception("Failed to load replay log")
         app_state.should_run = False
         return
 
-    logger.info("リプレイログ読み込み完了（件数=%d）", len(data))
+    logger.info("Replay log loading complete (count=%d)", len(data))
 
     prev_ts = None
     frame = 0
 
     for entry in data:
         if not app_state.should_run:
-            logger.info("should_run=False を検出、リプレイ中断")
+            logger.info("Detected should_run=False, aborting replay")
             break
 
         ts = entry.get("_ts", time.time())
@@ -53,7 +53,7 @@ def replay_log(app_state):
 
         frame += 1
         if frame % 100 == 0:
-            logger.debug("リプレイ進行中: frame=%d", frame)
+            logger.debug("Replay in progress: frame=%d", frame)
 
     app_state.replay_finished = True
-    logger.info("リプレイ完了（総フレーム=%d）", frame)
+    logger.info("Replay completed (total frames=%d)", frame)

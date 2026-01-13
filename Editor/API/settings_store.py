@@ -15,46 +15,46 @@ def load_setting():
             data = json.load(f)
         return data if isinstance(data, list) else []
     except Exception:
-        logger.exception("設定読み込み失敗")
+        logger.exception("Failed to load settings")
         return []
 
 def save_setting(app_state, expression: str, name: str = "", valid_state: dict = None):
-    # 1. 入力値の基本バリデーション
+    # 1. Basic validation of input values
     if not name or not name.strip():
-        raise ValueError("設定名が空です。一意の名前を入力してください。")
+        raise ValueError("Setting name is empty. Please enter a unique name.")
     
     if not expression or not expression.strip():
-        raise ValueError(f"設定 '{name}' の式が入力されていません。")
+        raise ValueError(f"Expression for setting '{name}' has not been entered.")
 
-    # 2. 式のパース
+    # 2. Parse expression
     try:
         ast_dict = parse_expression(expression)
     except ValueError as e:
-        raise ValueError(f"設定 '{name}' の式解析に失敗しました: {e}")
+        raise ValueError(f"Failed to parse expression for setting '{name}': {e}")
 
-    # 3. ★式の構造分析 (依存関係の抽出)
+    # 3. ★ Expression structure analysis (Extraction of dependencies)
     try:
-        # ここで info を取得する
+        # Get info here
         expr_info = analyze_expr(ast_dict, valid_state)
     except Exception as e:
-        raise ValueError(f"式の構造分析に失敗しました: {e}")
+        raise ValueError(f"Failed to analyze expression structure: {e}")
 
-    # 4. 通知モードの決定 (解析済みの info を渡す)
+    # 4. Determine notification mode (Pass the analyzed info)
     try:
         notify = decide_notify_mode(ast_dict, expr_info)
     except Exception as e:
-        raise ValueError(f"通知モードの判定中にエラーが発生しました: {e}")
+        raise ValueError(f"An error occurred while determining the notification mode: {e}")
 
-    # 5. 既存設定の読み込みと重複チェック（改善案）
+    # 5. Load existing settings and check for duplicates (Improvement plan)
     try:
         settings = load_setting()
     except Exception as e:
-        settings = [] # ファイルがない場合は新規作成
+        settings = [] # Create new if file does not exist
 
-    # 同じ名前があれば削除（上書きのため）
+    # Remove if the same name exists (for overwriting)
     settings = [s for s in settings if s.get("name") != name]
 
-    # 6. 新規設定の作成
+    # 6. Create new setting
     new_setting = {
         "name": name,
         "expression": expression,
@@ -65,23 +65,23 @@ def save_setting(app_state, expression: str, name: str = "", valid_state: dict =
     }
     settings.append(new_setting)
 
-    # 7. ファイルへの保存
+    # 7. Save to file
     try:
         with open(SETTING_FILE, "w", encoding="utf-8") as f:
             json.dump(settings, f, ensure_ascii=False, indent=2)
     except IOError as e:
-        logger.error("ファイル保存エラー: %s", e)
-        raise RuntimeError(f"設定ファイル '{SETTING_FILE}' の保存に失敗しました。")
+        logger.error("File save error: %s", e)
+        raise RuntimeError(f"Failed to save setting file '{SETTING_FILE}'.")
     except Exception as e:
-        logger.error("予期せぬ保存エラー: %s", e)
-        raise RuntimeError(f"保存処理中に予期せぬエラーが発生しました: {e}")
+        logger.error("Unexpected save error: %s", e)
+        raise RuntimeError(f"An unexpected error occurred during the save process: {e}")
 
-    # 8. キャッシュの更新
+    # 8. Update cache
     try:
         app_state.cached_settings = settings 
-        logger.info("設定を保存し、キャッシュを更新しました: %s", name)
+        logger.info("Saved settings and updated cache: %s", name)
     except AttributeError:
-        logger.warning("app_state に cached_settings が存在しないため、メモリ更新をスキップしました。")
+        logger.warning("Skipped memory update because 'cached_settings' does not exist in app_state.")
     
     return True
 
@@ -94,6 +94,6 @@ def delete_setting(app_state, index):
     with open(SETTING_FILE, "w", encoding="utf-8") as f:
         json.dump(settings, f, ensure_ascii=False, indent=2)
 
-    # 【重要】キャッシュを最新に同期
+    # [Important] Synchronize cache with the latest state
     app_state.cached_settings = settings
-    logger.info("設定を削除し、キャッシュを更新しました")
+    logger.info("Deleted setting and updated cache")

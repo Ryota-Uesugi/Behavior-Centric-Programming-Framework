@@ -73,7 +73,7 @@ body {
     transition: filter 0.2s, transform 0.1s;
 }
 
-/* Drawer Block: iマーク基準点 */
+/* Drawer Block: Info Icon Reference Point */
 .drawer-block {
     position: relative !important;
     background: #fff;
@@ -126,7 +126,7 @@ body {
     color: #fff;
 }
 
-/* 共通ツールチップ */
+/* Global Tooltip */
 #global-tooltip {
     position: fixed;
     display: none;
@@ -271,7 +271,7 @@ body {
     border-radius: 4px;
     text-align: center;
 }
-/* Stringブロック用inputは少し広げる */
+/* Slightly widen input for String blocks */
 .string-block input {
     width: 100px;
     text-align: left;
@@ -290,7 +290,7 @@ body {
     background-color: rgba(255, 255, 255, 0.6);
 }
 
-/* 挿入不可（赤） */
+/* Insertion Invalid (Red) */
 .slot.slot-hover-invalid {
     background-color: rgba(255, 50, 50, 0.3);
     border-color: #ff3333;
@@ -298,7 +298,7 @@ body {
     cursor: not-allowed;
 }
 
-/* 挿入可（青） */
+/* Insertion Valid (Blue) */
 .slot.slot-hover-valid {
     background-color: rgba(50, 50, 255, 0.3);
     border-color: #3333ff;
@@ -324,7 +324,7 @@ body {
     user-select: none;
 }
 
-/* --- Trash (ゴミ箱) --- */
+/* --- Trash --- */
 #trash {
     right: 20px;
     bottom: 20px;
@@ -340,7 +340,7 @@ body {
     transform: scale(1.1);
 }
 
-/* --- Expression Area (Send / 構築エリア) --- */
+/* --- Expression Area (Send / Build Area) --- */
 #expression-area {
     top: 20px;
     right: 20px;
@@ -356,18 +356,18 @@ body {
     transform: scale(1.1);
 }
 
-/* --- Storage Area (保存 / リスト呼び出し) --- */
+/* --- Storage Area (Save / Call List) --- */
 #storage-area {
     top: 140px;
     right: 20px;
     
-    /* 見た目の基本設定 */
+    /* Basic Visual Settings */
     border: 2px dashed #fa8c16; 
     background: rgba(255, 247, 230, 0.8);
     color: #fa8c16;             
     border-radius: 8px;
     
-    /* 文字配置の調整*/
+    /* Text Layout Adjustment */
     padding: 10px;
     text-align: center;
     font-weight: bold;
@@ -381,7 +381,7 @@ body {
     background: rgba(217, 83, 79, 0.1);
 }
 
-/* ▼ ホバー時のスタイル ▼ */
+/* ▼ Hover Style ▼ */
 #storage-area:hover {
     color: #fff;              
     transform: scale(1.1);
@@ -390,14 +390,14 @@ body {
     border-style: solid;      
 }
 
-/* ▼ 満杯時のホバー背景（赤く塗りつぶす） ▼ */
+/* ▼ Hover Background When Full (Red Fill) ▼ */
 #storage-area.limit-reached:hover {
     background: #d9534f;
     border-color: #d9534f;
     box-shadow: 0 4px 12px rgba(217, 83, 79, 0.4);
 }
 
-/* ================= Storage List Style (統合版) ================= */
+/* ================= Storage List Style  ================= */
 
 #storage-list-container {
     max-height: 300px;    
@@ -474,7 +474,7 @@ body {
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 
-/* 削除ボタン */
+/* Delete Button */
 .storage-delete-btn {
     background: #fff1f0;
     color: #f5222d;
@@ -483,7 +483,7 @@ body {
     padding: 4px 10px;
     cursor: pointer;
     font-size: 11px;
-    flex-shrink: 0; /* 縮まないようにする */
+    flex-shrink: 0; /* Prevent shrinking */
     transition: all 0.2s;
 }
 
@@ -493,7 +493,7 @@ body {
     border-color: #f5222d;
 }
 
-/* ドラッグ中のグループ枠 */
+/* Group Frame During Drag */
 .group-box {
     position: absolute;
     border: 2px dashed #1890ff;
@@ -693,7 +693,7 @@ body {
     border-color: #f5222d;
 }
 
-/* モーダル右上の×ボタン */
+/* Close button (x) at top right of modal */
 .btn-close-icon {
     background: transparent;
     border: none;

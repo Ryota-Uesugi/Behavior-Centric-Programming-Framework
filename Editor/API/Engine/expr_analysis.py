@@ -1,4 +1,4 @@
-# パーサー側で定義した型名と一致させる
+# Match the type names defined in the parser
 TYPE_NUMBER = "number"
 TYPE_BOOLEAN = "boolean"
 TYPE_STRING = "string"
@@ -6,17 +6,17 @@ TYPE_ANY = "any"
 
 class ExprInfo:
     def __init__(self):
-        self.return_type = None   # 最終的な戻り値の型
-        self.window_sec = None    # 検出された最小のWindow値
-        self.time_dependent = False # 時間依存関数の有無
-        self.dependencies = set()   # ★追加: 依存フィールドのセット
+        self.return_type = None     # Final return type
+        self.window_sec = None      # Minimum detected window value
+        self.time_dependent = False # Presence of time-dependent functions
+        self.dependencies = set()   # ★Added: Set of dependency fields
 
 def analyze_expr(node, valid_state=None) -> ExprInfo:
     info = ExprInfo()
     if not node:
         return info
     
-    # 1. ルートノードの型を取得 (既存ロジックそのまま)
+    # 1. Get the type of the root node (Keep existing logic as is)
     raw_type = node.get("return_type")
     
     if raw_type == TYPE_ANY and node.get("name") == "if":
@@ -36,7 +36,7 @@ def analyze_expr(node, valid_state=None) -> ExprInfo:
     else:
         info.return_type = raw_type
     
-    # 2. ツリー解析 (依存関係抽出を含む)
+    # 2. Tree analysis (includes dependency extraction)
     _recursive_analyze(node, info, valid_state)
     return info
 
@@ -46,22 +46,22 @@ def _recursive_analyze(node, info: ExprInfo, valid_state: dict = None):
 
     t = node.get("type")
 
-    # フィールド検証 & ★依存関係の記録
+    # Field validation & ★Record dependencies
     if t == "value":
         m_type = node.get("messageType")
         field = node.get("field")
         
-        # 1. バリデーション
+        # 1. Validation
         if valid_state:
             if m_type not in valid_state or field not in valid_state.get(m_type, {}):
-                # 必要に応じてエラーにするかパスするか
+                # Raise an error or pass as needed
                 pass 
 
-        # 2. 依存関係セットに追加 (例: "BATTERY_STATUS.volt")
+        # 2. Add to dependency set (e.g., "BATTERY_STATUS.volt")
         if m_type and field:
             info.dependencies.add(f"{m_type}.{field}")
 
-    # 時間依存判定
+    # Time-dependency check
     if t == "func":
         if node.get("category") == "time_func" or node.get("time_dependent"):
             info.time_dependent = True
@@ -70,7 +70,7 @@ def _recursive_analyze(node, info: ExprInfo, valid_state: dict = None):
                 if info.window_sec is None or w < info.window_sec:
                     info.window_sec = w
 
-    # 子ノード再帰
+    # Recursion for child nodes
     for arg in node.get("args", []):
         _recursive_analyze(arg, info, valid_state)
     _recursive_analyze(node.get("left"), info, valid_state)
@@ -80,12 +80,6 @@ def _recursive_analyze(node, info: ExprInfo, valid_state: dict = None):
 def decide_notify_mode(ast, info: ExprInfo):
     
     node_name = ast.get("name")
-    
-    
-    # Timer特例
-    if node_name == "timer":
-        interval = info.window_sec if info.window_sec and info.window_sec > 0 else 1.0
-        return {"mode": "periodic", "interval": interval}
 
     # A. Boolean
     if info.return_type == TYPE_BOOLEAN:
@@ -100,7 +94,7 @@ def decide_notify_mode(ast, info: ExprInfo):
         if info.time_dependent:
             return {"mode": "periodic", "interval": info.window_sec or 1.0}
         else:
-            raise ValueError("数値のみの式はアラートとして不適切です。比較式にするか timer() を使用してください。")
+            raise ValueError("Numeric-only expressions are unsuitable for alerts. Please use a comparison expression or use Notify().")
 
     # C. ANY
     if info.return_type == TYPE_ANY:
@@ -114,6 +108,6 @@ def decide_notify_mode(ast, info: ExprInfo):
                 interval = info.window_sec if info.window_sec and info.window_sec > 0 else 1.0
                 return {"mode": "periodic_change", "interval": interval}
         
-        raise ValueError("式の型を特定できませんでした。")
+        raise ValueError("Could not identify the expression type.")
 
-    raise ValueError(f"通知方式を決定できません (戻り値型: {info.return_type})")
+    raise ValueError(f"Cannot determine notification mode (Return Type: {info.return_type})")

@@ -89,11 +89,6 @@ const FUNC_CONFIG = {
         category: 'time_func', 
         desc: "Calculates the average rate of change per second by comparing the start of the specified time window with the current time.\n(Args: target value, seconds)" 
     },
-    "timer": { 
-        args: ["val", "interval"], 
-        category: 'time_func', 
-        desc: "Executes evaluation every time the specified seconds elapse.\n(Args: value to evaluate, interval in seconds)" 
-    },
     "delta": { 
         args: ["val", "sec"], 
         category: 'time_func', 
@@ -110,14 +105,12 @@ const FUNC_CONFIG = {
         desc: "Measures how long the condition has been continuously 'True' within the specified time range.\n(Args: condition, max lookback seconds)" 
     },
 
-    // --- [NEW] flow_control (Flow Control) ---
     "if": { 
         args: ["cond", "true_val", "false_val"], 
         category: 'flow_control', 
         desc: "Switches the action or value to execute based on the condition.\n(Args: condition, action if True, action if False)" 
     },
 
-    // --- [NEW] control_func (Drone Control) ---
     "takeoff": { 
         args: ["alt"], 
         category: 'control_func', 
@@ -305,7 +298,7 @@ async function fetchSavedSettings() {
 async function openLoadSettingForm(block) {
     const settings = await fetchSavedSettings();
 
-    // 1. UIの作成
+    // 1. Create UI
     const modalDiv = document.createElement('div');
     modalDiv.className = 'modal';
 
@@ -313,16 +306,16 @@ async function openLoadSettingForm(block) {
     content.className = 'modal-content';
     content.style.width = '400px';
 
-    // ヘッダー
+    // Header
     const header = document.createElement('div');
     header.className = 'modal-header';
     header.innerHTML = '<h3>Load Setting</h3>';
 
-    // ボディ
+    // Body
     const body = document.createElement('div');
     body.className = 'modal-body';
 
-    // セレクトボックス
+    // Select Box
     const labelSelect = document.createElement('p');
     labelSelect.className = 'label';
     labelSelect.textContent = 'Select a saved setting:';
@@ -331,7 +324,7 @@ async function openLoadSettingForm(block) {
     settingSelect.style.width = '100%';
     settingSelect.style.marginBottom = '10px';
 
-    // プレビューエリア
+    // Preview Area
     const labelPreview = document.createElement('p');
     labelPreview.className = 'label';
     labelPreview.textContent = 'Expression Preview (Editable if Custom):';
@@ -342,7 +335,7 @@ async function openLoadSettingForm(block) {
     previewTx.style.height = '80px';
     previewTx.style.backgroundColor = '#f0f0f0';
 
-    // データの充填
+    // Populate Data
     if (settings.length === 0) {
         const opt = new Option("-- No saved settings --", "");
         opt.disabled = true;
@@ -355,11 +348,11 @@ async function openLoadSettingForm(block) {
         });
     }
 
-    // Custom項目の追加
+    // Add Custom Option
     const customOpt = new Option("Custom", "CUSTOM");
     settingSelect.add(customOpt);
 
-    // プレビュー更新ロジック
+    // Preview Update Logic
     const updatePreview = () => {
         const selectedValue = settingSelect.value;
         const selectedOpt = settingSelect.options[settingSelect.selectedIndex];
@@ -399,7 +392,7 @@ async function openLoadSettingForm(block) {
     }
     updatePreview();
 
-    // フッター
+    // Footer
     const footer = document.createElement('div');
     footer.className = 'modal-footer';
 
@@ -415,12 +408,12 @@ async function openLoadSettingForm(block) {
     okBtn.className = 'btn-send';
     okBtn.textContent = 'Create';
     
-    // --- 変更点: 生成処理とエラーハンドリング ---
+    // --- Change: Generation process and error handling ---
     okBtn.onclick = () => {
         const selectedValue = settingSelect.value;
         const selectedOpt = settingSelect.options[settingSelect.selectedIndex];
 
-        // 選択チェック
+        // Selection Check
         if (selectedValue !== 'CUSTOM' && (!selectedOpt || !selectedOpt.dataset.expression)) {
             if (settingSelect.options[0].disabled && settingSelect.selectedIndex === 0) return;
         }
@@ -436,17 +429,17 @@ async function openLoadSettingForm(block) {
             expression = selectedOpt.dataset.expression;
         }
 
-        // 座標計算
+        // Coordinate Calculation
         const rect = block.getBoundingClientRect();
         const fieldRect = field.getBoundingClientRect();
         const x = rect.left - fieldRect.left + field.scrollLeft;
         const y = rect.top - fieldRect.top + field.scrollTop;
 
         try {
-            // 生成実行 (失敗するとここでエラーがスローされる)
+            // Execute generation (throws error here if failed)
             const newBlock = spawnBlocksFromExpression(expression, x, y);
             
-            // 成功した場合のみ、古いブロックとモーダルを削除
+            // Only remove old block and modal if successful
             if (newBlock) {
                 if (block.parentNode) block.parentNode.removeChild(block);
                 if (typeof blocks !== 'undefined') blocks = blocks.filter(b => b !== block);
@@ -455,7 +448,7 @@ async function openLoadSettingForm(block) {
                 modalDiv.remove();
             }
         } catch (e) {
-            // 失敗時: アラートを出して関数を抜ける (モーダルは閉じない)
+            // On failure: Show alert and exit function (do not close modal)
             console.error(e);
             alert(e.message); 
             return; 
@@ -482,7 +475,6 @@ function getOperatorType(token) {
 }
 
 function tokenize(expression) {
-    // 変更なし
     const regex = /\s*('[\s\S]*?'|=>|>=|<=|==|!=|\w+\.\w+|\d+(?:\.\d+)?|[a-zA-Z_]\w*|[+\-*/%^&|~()<>=,])\s*/g;
     let tokens = [];
     let match;
@@ -509,12 +501,12 @@ function spawnBlocksFromExpression(expression, x, y) {
         
         const token = tokens[cursor++];
 
-        // --- 1. 数値 ---
+        // --- 1. Number ---
         if (!isNaN(parseFloat(token)) && !token.startsWith("'")) {
             return createBlock('number', token, false);
         }
 
-        // --- 2. 文字列 ---
+        // --- 2. String ---
         if (token.startsWith("'")) {
             return createBlock('string', token.slice(1, -1), false);
         }
@@ -529,7 +521,7 @@ function spawnBlocksFromExpression(expression, x, y) {
             return b;
         }
 
-        // --- 4. 関数呼び出し ---
+        // --- 4. Function call ---
         if (peek() === '(') {
             consume('(');
             
@@ -539,7 +531,7 @@ function spawnBlocksFromExpression(expression, x, y) {
             if (typeof FUNC_CONFIG !== 'undefined' && FUNC_CONFIG[token]) {
                 category = FUNC_CONFIG[token].category;
             } else {
-                throw new Error(`エラー: 関数 '${token}' は定義されていません。`);
+                throw new Error(`Error: Function '${token}' is not defined.`);
             }
 
             const funcBlock = createBlock(category, funcName, false);
@@ -567,24 +559,24 @@ function spawnBlocksFromExpression(expression, x, y) {
             }
             
             if (!consume(')')) {
-                 throw new Error(`エラー: 関数 '${token}' の閉じ括弧 ')' が見つかりません。`);
+                 throw new Error(`Error: Closing parenthesis ')' for function '${token}' not found.`);
             }
             return funcBlock;
         }
 
-        // --- 5. 演算子 ---
+        // --- 5. Operator ---
         const opType = getOperatorType(token);
         if (opType) {
             return createBlock(opType, token, false, token);
         }
 
-        // --- 6. その他 (変数など) ---
+        // --- 6. Others (variables etc.) ---
         return createBlock('string', token, false);
     }
     
     const rootBlock = parseBlock();
     
-    // パース中にエラーが出ずに完了し、かつルートブロックが生成された場合のみ画面に追加
+    // Add to screen only if parsing completes without error and root block is generated
     if (rootBlock) {
         field.appendChild(rootBlock);
         if (typeof blocks !== 'undefined') blocks.push(rootBlock);

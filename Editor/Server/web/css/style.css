@@ -106,7 +106,6 @@ button{
   cursor:pointer;
 }
 
-/* Seek - カスタム実装 */
 #seek-wrapper{
   position:fixed;
   bottom:10px;
@@ -226,7 +225,6 @@ button{
   position:relative; 
 }
 
-/* 再読み込みボタン */
 #reload-conditions-btn{
   margin-left:auto;
   padding:2px 6px;

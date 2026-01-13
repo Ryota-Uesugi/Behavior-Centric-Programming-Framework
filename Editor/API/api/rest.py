@@ -21,47 +21,48 @@ async def get_settings(request):
 async def post_settings(request):
     state = request.app["state"]
     try:
-        # 1. JSONパース自体の失敗をキャッチ
+        # 1. Catch JSON parsing failures
         try:
             data = await request.json()
         except Exception:
             return web.json_response({
                 "status": "error", 
-                "message": "リクエストボディが正しいJSON形式ではありません。"
+                "message": "The request body is not in a valid JSON format."
             }, status=400)
 
         expression = data.get("expression")
         name = data.get("name")
 
-        # デバッグログ
+        # Debug log
         logger.debug(f"Received save request: Name='{name}', Expr='{expression}'")
 
-        # 2. 必須項目のチェック（save_setting内でも行いますが、入り口で弾くのが親切です）
+        # 2. Check for required fields
+        # (Validation is also performed in save_setting, but it is better to reject invalid requests at the entry point)
         if not name:
             return web.json_response({
                 "status": "error", 
-                "message": "設定名（name）は必須項目です。"
+                "message": "Setting name ('name') is required."
             }, status=400)
         
         if not expression:
             return web.json_response({
                 "status": "error", 
-                "message": "数式（expression）は必須項目です。"
+                "message": "Formula ('expression') is required."
             }, status=400)
 
-        # 3. 保存処理の実行
-        # save_setting内でのバリデーション（構文ミス、関数引数ミス、重複など）は
-        # すべて ValueError として送出される想定です。
+        # 3. Execute save process
+        # Validation inside save_setting (syntax errors, function argument errors, duplicates, etc.)
+        # is expected to be raised as ValueError.
         save_setting(state, expression, name, state.current_state)
         
         return web.json_response({
             "status": "success",
-            "message": f"設定 '{name}' を保存しました。"
+            "message": f"Setting '{name}' has been saved."
         })
 
     except ValueError as e:
-        # 入力内容に起因するエラー（構文エラー、引数エラー、名前重複など）
-        # クライアント側で修正可能なため 400 Bad Request
+        # Errors caused by input content (syntax errors, argument errors, name duplication, etc.)
+        # 400 Bad Request, as this can be fixed on the client side.
         logger.warning(f"Validation error in post_settings: {e}")
         return web.json_response({
             "status": "error", 
@@ -69,20 +70,20 @@ async def post_settings(request):
         }, status=400)
 
     except RuntimeError as e:
-        # システム起因のエラー（ファイル書き込み失敗など）
-        # サーバー側の問題のため 500 Internal Server Error
+        # Errors caused by the system (file write failure, etc.)
+        # 500 Internal Server Error, as this is a server-side issue.
         logger.error(f"Runtime error in post_settings: {e}")
         return web.json_response({
             "status": "error", 
-            "message": f"システムエラーが発生しました: {str(e)}"
+            "message": f"A system error occurred: {str(e)}"
         }, status=500)
 
     except Exception as e:
-        # その他予期せぬエラー
+        # Other unexpected errors
         logger.exception("Unexpected error in post_settings")
         return web.json_response({
             "status": "error", 
-            "message": "予期せぬエラーが発生しました。ログを確認してください。"
+            "message": "An unexpected error occurred. Please check the logs."
         }, status=500)
 
 async def get_mavlink_schema(request):

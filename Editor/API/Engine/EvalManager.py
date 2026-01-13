@@ -8,7 +8,7 @@ class EvalEngine:
         self.drone = DroneController(state)
         self.history = {}
 
-        # キャッシュ群: 'name' をキーにして管理
+        # Caches: Managed using 'name' as the key
         self.evaluators = {}
         self.func_states = {}
         self.prev_values = {}
@@ -16,7 +16,7 @@ class EvalEngine:
 
     def update_state(self, current_state_dict, now):
         """
-        受信した最新のステートを履歴(deque)に保存する
+        Stores the received latest state into the history (deque).
         """
         for mtype, msg in current_state_dict.items():
             if not isinstance(msg, dict): continue
@@ -27,19 +27,19 @@ class EvalEngine:
 
     def evaluate(self, now):
         """
-        全設定の条件評価を行い、イベント(通知が必要な結果)を返す
+        Evaluates conditions for all settings and returns events (results requiring notification).
         """
         current_dict = self.state.current_state
         settings = self.state.cached_settings
 
-        # 履歴の更新
+        # Update history
         self.update_state(current_dict, now)
 
         if not settings:
             self._clear_all_caches()
             return []
 
-        # 1. クリーンアップ: 現在の設定リストにない名前のキャッシュを消す
+        # 1. Cleanup: Remove caches for names not present in the current settings list
         current_names = {s.get("name") for s in settings if s.get("name")}
         self._cleanup_unused_caches(current_names)
 
@@ -50,19 +50,19 @@ class EvalEngine:
             if not name or not ast:
                 continue
 
-            # 通知設定の取得
+            # Retrieve notification settings
             notify = setting.get("notify", {})
             mode = notify.get("mode", "on_change")
             interval = notify.get("interval", 0)
             
             last_time = self.last_eval_time.get(name, 0)
             
-            # 周期実行判定
+            # Periodic execution check
             if mode in ("periodic", "periodic_change"):
                 if (now - last_time < interval):
                     continue
 
-            # 2. 状態とEvaluatorの取得(なければ作成)
+            # 2. Retrieve state and Evaluator (create if missing)
             if name not in self.func_states:
                 self.func_states[name] = {}
             
@@ -76,16 +76,16 @@ class EvalEngine:
             evaluator = self.evaluators[name]
             
             try:
-                # 評価実行
+                # Execute evaluation
                 value = evaluator.eval(ast, now)
                 if value is None:
                     self.prev_values[name] = None
                     continue
             except Exception:
-                # 評価中のエラーはスキップ（logger.exceptionをここに入れても良い）
+                # Skip errors during evaluation (logger.exception could be added here)
                 continue
 
-            # 3. 変化判定とイベント生成
+            # 3. Determine changes and generate events
             prev = self.prev_values.get(name)
             send_event = False
 
@@ -97,7 +97,7 @@ class EvalEngine:
                 send_event = True
 
             if send_event:
-                # 通知用データを追加
+                # Add data for notification
                 events.append((name, value, setting))
                 self.prev_values[name] = value
             
@@ -107,7 +107,7 @@ class EvalEngine:
 
     def _cleanup_unused_caches(self, current_names):
         """
-        現在存在しない設定のキャッシュを削除し、メモリリークを防ぐ
+        Removes caches for settings that no longer exist to prevent memory leaks.
         """
         stored_names = list(self.evaluators.keys())
         for name in stored_names:
@@ -119,7 +119,7 @@ class EvalEngine:
 
     def _clear_all_caches(self):
         """
-        すべてのキャッシュを初期化する
+        Initializes (clears) all caches.
         """
         self.evaluators.clear()
         self.func_states.clear()

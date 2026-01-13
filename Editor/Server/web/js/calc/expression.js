@@ -30,7 +30,7 @@ function updateExpressionArea(group) {
 }
 
 /**
- * DOMブロック解析
+ * Parse DOM Block Data
  */
 
 function parseBlockData(block) {
@@ -67,7 +67,7 @@ function parseBlockData(block) {
         return result;
     }
 
-    // --- 2. 単純値 ---
+    // --- 2. Simple Values ---
     if (type === 'number') {
         const val = block.querySelector('input')?.value || '0';
         result.expr = val;
@@ -90,7 +90,7 @@ function parseBlockData(block) {
         return result;
     }
 
-    // --- 3. 関数・制御 (if文の特例処理含む) ---
+    // --- 3. Functions/Control (including special handling for 'if') ---
     const complexTypes = ["calc_func", "time_func", "export_func", "control_func", "flow_control"];
     
     if (complexTypes.includes(type)) {
@@ -159,7 +159,7 @@ function parseBlockData(block) {
         let shapeStart = '('; 
         let shapeEnd = ')';
 
-        // ★ここで if( ... ) の形を作っています
+        // ★ Constructing the if( ... ) shape here
         if (funcName === 'if') {
             shapeStart = '{'; shapeEnd = '}';
             nodeLabel = `if( ${conditionLabel} )`; 
@@ -181,7 +181,7 @@ function parseBlockData(block) {
 }
 
 /**
- * 文字列の式を解析 (Storage用)
+ * Parse String Expression (for Storage)
  */
 function parseStringExpression(exprStr) {
     if (!exprStr) return null;
@@ -190,7 +190,7 @@ function parseStringExpression(exprStr) {
     const currentId = `str_${mermaidNodeCounter++}`;
     let mermaid = '';
 
-    // 正規表現: 末尾の ')' までをキャプチャします
+    // Regex: Capture up to the trailing ')'
     const match = exprStr.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*)\)$/);
 
     if (match) {
@@ -203,7 +203,7 @@ function parseStringExpression(exprStr) {
         let shapeEnd = ')';
         let conditionText = '';
 
-        // ★ここで if( ... ) の形を作っています
+        // ★ Constructing the if( ... ) shape here
         if (funcName === 'if') {
             shapeStart = '{'; shapeEnd = '}';
             conditionText = args.length > 0 ? args[0] : '?';
@@ -257,7 +257,7 @@ function splitArgs(str) {
 }
 
 // -------------------------------------------------------------
-// モーダル機能 (拡大ボタンを追加)
+// Modal Functionality (with Zoom Button)
 // -------------------------------------------------------------
 window.openExpressionModal = function(expression, warningText = "", mermaidCode = null){
     if(typeof pendingExpression !== 'undefined') pendingExpression = expression;
@@ -271,12 +271,12 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
     if (tx) tx.value = expression;
     if (nameInput) nameInput.value = ""; 
 
-    // --- 変更点: ラッパーdivを作成してボタンと図をまとめる ---
+    // --- Change: Create a wrapper div to group the button and chart ---
     let chartWrapper = document.getElementById('flowchart-wrapper');
     if (!chartWrapper) {
         chartWrapper = document.createElement('div');
         chartWrapper.id = 'flowchart-wrapper';
-        chartWrapper.style.position = 'relative'; // ボタン配置の基準
+        chartWrapper.style.position = 'relative'; // Reference for button positioning
         
         if (tx && tx.parentNode) {
             tx.parentNode.insertBefore(chartWrapper, tx.nextSibling);
@@ -285,7 +285,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
         }
     }
 
-    // 図のコンテナ
+    // Chart container
     let chartContainer = document.getElementById('flowchart-preview');
     if (!chartContainer) {
         chartContainer = document.createElement('div');
@@ -296,7 +296,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
             marginBottom: '10px',
             padding: '10px',
             minHeight: '120px',
-            maxHeight: '300px', // 通常時はスクロール可能に制限
+            maxHeight: '300px', // Restrict height for scrolling in normal view
             backgroundColor: '#ffffff',
             borderRadius: '4px',
             display: 'flex',
@@ -306,7 +306,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
         chartWrapper.appendChild(chartContainer);
     }
 
-    // 拡大ボタンの作成・配置
+    // Create and place zoom button
     let expandBtn = document.getElementById('flowchart-expand-btn');
     if (!expandBtn) {
         expandBtn = document.createElement('button');
@@ -328,7 +328,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
         
         expandBtn.onclick = function(e) {
             e.preventDefault();
-            // 現在のSVGコンテンツを取得して全画面表示へ
+            // Get current SVG content and show in full screen
             const svgContent = chartContainer.innerHTML;
             if(svgContent) showFullscreenOverlay(svgContent);
         };
@@ -336,7 +336,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
         chartWrapper.appendChild(expandBtn);
     }
 
-    // フローチャート描画
+    // Render flowchart
     if (mermaidCode) {
         chartContainer.innerHTML = `<div class="mermaid">${mermaidCode}</div>`;
         if (typeof mermaid !== 'undefined') {
@@ -352,7 +352,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
         expandBtn.style.display = 'none';
     }
 
-    // Warningエリア
+    // Warning area
     let warningDiv = document.getElementById('modal-warning');
     if (!warningDiv) {
         warningDiv = document.createElement('div');
@@ -391,7 +391,7 @@ window.openExpressionModal = function(expression, warningText = "", mermaidCode 
 };
 
 /**
- * 全画面オーバーレイを表示する関数
+ * Function to show fullscreen overlay
  */
 function showFullscreenOverlay(content) {
     let overlay = document.getElementById('fs-overlay');
@@ -402,7 +402,7 @@ function showFullscreenOverlay(content) {
             position: 'fixed',
             top: '0', left: '0', width: '100vw', height: '100vh',
             backgroundColor: 'rgba(255,255,255,0.98)',
-            zIndex: '10000', // モーダルより手前
+            zIndex: '10000', // In front of modal
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -411,7 +411,7 @@ function showFullscreenOverlay(content) {
             boxSizing: 'border-box'
         });
         
-        // 閉じるボタン
+        // Close button
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '× Close';
         Object.assign(closeBtn.style, {
@@ -424,12 +424,12 @@ function showFullscreenOverlay(content) {
         closeBtn.onclick = () => overlay.style.display = 'none';
         overlay.appendChild(closeBtn);
         
-        // コンテンツ領域
+        // Content area
         const contentBox = document.createElement('div');
         contentBox.id = 'fs-content';
         Object.assign(contentBox.style, {
             width: '100%', height: '90%',
-            overflow: 'auto', // スクロール可能
+            overflow: 'auto', // Scrollable
             display: 'flex', 
             justifyContent: 'center', 
             alignItems: 'center'
@@ -442,12 +442,12 @@ function showFullscreenOverlay(content) {
     const contentBox = document.getElementById('fs-content');
     contentBox.innerHTML = content;
     
-    // SVGのスタイル調整（全画面で見やすく）
+    // Adjust SVG style (for better visibility in full screen)
     const svg = contentBox.querySelector('svg');
     if(svg) {
-        svg.style.maxWidth = 'none'; // サイズ制限解除
+        svg.style.maxWidth = 'none'; // Remove size limit
         svg.style.height = 'auto';
-        // 図が小さすぎると見にくいので、最低幅を確保しつつ親に合わせる
+        // Ensure minimum width while fitting parent, as small charts are hard to read
         svg.style.minWidth = '50%'; 
     }
     

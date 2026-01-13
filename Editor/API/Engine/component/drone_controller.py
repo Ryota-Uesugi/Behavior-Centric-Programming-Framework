@@ -13,10 +13,10 @@ class DroneController:
     def is_connected(self):
         return self.master is not None
 
-    # --- 基本操作系 ---
+    # --- Basic Operations ---
 
     def set_mode(self, mode_name):
-        """フライトモードを変更し、変更が適用されるまで待機します"""
+        """Changes the flight mode and waits for the change to be confirmed."""
         if not self.is_connected():
             logger.warning(f"Failed to set mode '{mode_name}': Drone not connected")
             return False
@@ -29,10 +29,10 @@ class DroneController:
         logger.info(f"Setting mode to: {mode_name} (ID: {mode_id})")
         self.master.set_mode(mode_id)
 
-        # モードが実際に切り替わったか確認（タイムアウト3秒）
+        # Verify if the mode actually switched (Timeout: 3 seconds)
         start_time = time.time()
         while time.time() - start_time < 3.0:
-            # 内部の heartbeat メッセージから最新のモードを確認
+            # Check the latest mode from internal heartbeat messages
             if self.master.flightmode == mode_name:
                 logger.info(f"Mode changed to {mode_name} successfully")
                 return True
@@ -42,14 +42,14 @@ class DroneController:
         return False
 
     def arm_and_wait(self, timeout=10):
-        """モーターを有効化（ARM）し、完了するまで待機します"""
+        """Arms the motors and waits for completion."""
         if not self.is_connected():
             return False
 
         logger.info("Sending ARM command...")
         self.master.arducopter_arm()
         
-        # モーターがARM状態になるまで待機
+        # Wait until motors are in ARMED state
         res = self.master.motors_armed_wait(timeout=timeout)
         if res:
             logger.info("Motors ARMED")
@@ -60,28 +60,28 @@ class DroneController:
 
     def takeoff(self, altitude):
         """
-        指定した高度(m)へ離陸します。
-        GUIDEDモードかつARM状態である必要があります。
+        Takes off to the specified altitude (meters).
+        Requires GUIDED mode and ARMED state.
         """
         if not self.is_connected():
             return False
 
-        # 離陸コマンドの送信 (MAV_CMD_NAV_TAKEOFF = 22)
-        # Param 7 が目標高度です
+        # Send takeoff command (MAV_CMD_NAV_TAKEOFF = 22)
+        # Param 7 is the target altitude
         logger.info(f"Taking off to {altitude}m...")
         self.execute_command(
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             p7=altitude
         )
         
-        # コマンドが受理されたかACK（承認）を確認（オプション）
-        # ここでは簡易的にログ出力のみ行います
+        # Check for command acknowledgement (ACK) (Optional)
+        # Here, we strictly perform simple logging.
         return True
 
-    # --- コマンド・制御系 ---
+    # --- Command / Control ---
 
     def execute_command(self, command_id, p1=0, p2=0, p3=0, p4=0, p5=0, p6=0, p7=0):
-        """COMMAND_LONG を送信します"""
+        """Sends a COMMAND_LONG message."""
         if not self.is_connected():
             logger.warning(f"Failed to execute command {command_id}: Drone not connected")
             return
@@ -99,18 +99,18 @@ class DroneController:
     def update_setpoint(self, x=None, y=None, z=None, vx=None, vy=None, vz=None, 
                         yaw=None, yaw_rate=None, 
                         coordinate_frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED):
-        """位置・速度・機首方位の目標値を更新します"""
+        """Updates setpoints for position, velocity, and yaw (heading)."""
         if not self.is_connected():
             logger.warning("Failed to update setpoint: Drone not connected")
             return
 
-        # マスク生成 (1=無視、0=有効)
+        # Create mask (1=ignore, 0=enable)
         mask = 0b000000000000
         
-        # 加速度(6-8)とForce(9)は常に無視
+        # Acceleration (6-8) and Force (9) are always ignored
         mask |= (1<<6) | (1<<7) | (1<<8) | (1<<9)
 
-        # 引数がNoneの項目をマスク（無視設定にする）
+        # Mask parameters that are None (set to ignore)
         if x is None: mask |= (1<<0)
         if y is None: mask |= (1<<1)
         if z is None: mask |= (1<<2)
@@ -120,7 +120,7 @@ class DroneController:
         if yaw is None: mask |= (1<<10)
         if yaw_rate is None: mask |= (1<<11)
 
-        # Noneを0に変換 (送信データ用)
+        # Convert None to 0 (for transmission data)
         vals = [x, y, z, vx, vy, vz, 0, 0, 0, 0, yaw, yaw_rate]
         c = [v if v is not None else 0 for v in vals]
 

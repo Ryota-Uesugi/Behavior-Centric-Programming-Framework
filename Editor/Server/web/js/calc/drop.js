@@ -1,11 +1,11 @@
-/* ================= ドロップ・結合・スロットロジック ================= */
+/* ================= Drop, Connection, and Slot Logic ================= */
 
 const trash = document.getElementById('trash');
 const expressionArea = document.getElementById('expression-area');
 const storageArea = document.getElementById('storage-area');
 
 // ================================
-// ドロップ終了時の分岐 (Drag.jsから呼ばれる)
+// Branching on Drop End (Called from Drag.js)
 // ================================
 function handleDrop(ev, group) {
     const { clientX: x, clientY: y } = ev;
@@ -14,34 +14,34 @@ function handleDrop(ev, group) {
     const sRect = storageArea.getBoundingClientRect();
     
 
-    // 1. ゴミ箱にドロップ
+    // 1. Drop to trash
     if (x >= tRect.left && x <= tRect.right && y >= tRect.top && y <= tRect.bottom) {
         dropToTrash(group);
         return;
     }
 
-    // 2. 式生成エリアにドロップ
+    // 2. Drop to expression generation area
     if (x >= eRect.left && x <= eRect.right && y >= eRect.top && y <= eRect.bottom) {
         dropToExpressionArea(group);
         return;
     }
 
-    // 3. 倉庫エリアにドロップ
+    // 3. Drop to storage area
     if (x >= sRect.left && x <= sRect.right && y >= sRect.top && y <= sRect.bottom) {
         dropToStorageArea(group);
         return;
     }
 
-    // 4. グループ間の挿入 (dragInfoはglobal)
+    // 4. Insert between groups (dragInfo is global)
     if (dragInfo && dragInfo.targetGroup && dragInfo.insertIndex != null) {
         dropToGroupInsert(group, dragInfo.targetGroup, dragInfo.insertIndex);
     } else {
-        // 4. ワークスペースへの通常配置
+        // 4. Normal placement on workspace
         dropToWorkspace(group);
     }
 }
 // ================================
-// 個別のアクション
+// Individual Actions
 // ================================
 
 function dropToTrash(group) {
@@ -84,36 +84,36 @@ function dropToWorkspace(group) {
 }
 
 // ================================
-// スロットバリデーション (block.jsのhoverと共有)
+// Slot Validation (Shared with hover in block.js)
 // ================================
 
 function validateSlotDrop(group, slot) {
     const parent = slot.closest('.block');
     
-    // 1. 基本チェック
-    if (group.includes(parent)) return { ok: false, reason: "自分自身の中に配置不可" };
-    if (slot.children.length > 0) return { ok: false, reason: "スロットは既に使用中" };
-    if (group.some(b => b.contains(slot))) return { ok: false, reason: "親要素を子スロットに配置不可" };
+    // 1. Basic checks
+    if (group.includes(parent)) return { ok: false, reason: "Cannot place inside itself" };
+    if (slot.children.length > 0) return { ok: false, reason: "Slot is already in use" };
+    if (group.some(b => b.contains(slot))) return { ok: false, reason: "Cannot place parent element into child slot" };
 
-    // 2. 時間関数の第1引数制限
+    // 2. Time function first argument restriction
     if (parent.dataset.type === 'time_func') {
         const slots = Array.from(parent.querySelectorAll(':scope > .slot'));
         const slotIndex = slots.indexOf(slot);
         const funcName = parent.dataset.func || parent.dataset.value;
-        // timer以外の場合、第1引数は型制限あり
+        // If not 'timer', first argument has type restrictions
         if (slotIndex === 0 && funcName !== 'timer') {
             const allowedTypes = ['number', 'mavlink']; 
             if (!group.every(b => allowedTypes.includes(b.dataset.type))) {
-                return { ok: false, reason: "第1引数はMavlinkか数値のみ可能です" };
+                return { ok: false, reason: "First argument must be Mavlink or Number" };
             }
         }
     }
 
-    // 3. 数値専用スロット制限
+    // 3. Numeric-only slot restriction
     if (slot.dataset.accept === 'number') {
         const isAllNumber = group.every(b => b.dataset.type === 'number');
         if (!isAllNumber) {
-            return { ok: false, reason: "ここは数値ブロックのみ配置可能です" };
+            return { ok: false, reason: "Only number blocks can be placed here" };
         }
     }
 
@@ -121,27 +121,27 @@ function validateSlotDrop(group, slot) {
 }
 
 // ================================
-// スロットへのドロップ実行
+// Execute Drop into Slot
 // ================================
 function handleSlotDrop(e, slot) {
     if (!dragInfo) return;
-    e.stopPropagation(); // Workspaceへのドロップを阻止
+    e.stopPropagation(); // Prevent drop to Workspace
 
     const group = dragInfo.group;
     const validation = validateSlotDrop(group, slot);
 
-    // ツールチップ消去
+    // Clear tooltip
     if (typeof globalTooltip !== 'undefined') globalTooltip.style.display = 'none';
     slot.classList.remove('slot-hover-valid', 'slot-hover-invalid');
 
     if (!validation.ok) {
-        console.warn(`拒否: ${validation.reason}`);
+        console.warn(`Rejected: ${validation.reason}`);
         bounceBlockBelow(group, slot);
-        dragInfo = null; // ドラッグ終了
+        dragInfo = null; // End drag
         return;
     }
 
-    // 埋め込み処理
+    // Embedding process
     const parent = slot.closest('.block');
     removeGroupBox(group);
     
@@ -149,7 +149,7 @@ function handleSlotDrop(e, slot) {
         slot.appendChild(b); 
         b.style.position = "static"; 
         b.style.width = "auto";
-        // グローバル配列からの除外
+        // Exclude from global array
         if(typeof blocks !== 'undefined') blocks = blocks.filter(x => x !== b);
         blockGroups.delete(b);
         b.classList.remove('dragging');
@@ -191,7 +191,7 @@ function bounceBlockBelow(group, slot) {
 }
 
 // ================================
-// ブロック接続・衝突
+// Block Connection & Collision
 // ================================
 
 const combinableOps = { 
@@ -212,14 +212,14 @@ function checkCollisionAndConnect(block) {
 }
 
 function connectBlocks(block1, block2) {
-    // 記号合体（>= など）の判定
+    // Check for symbol combination (e.g., >=)
     const combined = tryCombineSingleBlocks(block1, block2);
     if (combined) { 
         blockGroups.set(combined, [combined]); 
         return; 
     }
 
-    // 通常の横連結
+    // Normal horizontal connection
     let group1 = blockGroups.get(block1) || [block1];
     let group2 = blockGroups.get(block2) || [block2];
     if (group1 === group2) return;
@@ -264,7 +264,7 @@ function tryCombineSingleBlocks(block1, block2) {
 }
 
 // ================================
-// 右クリック: 取り出し/グループ解除
+// Right-click: Extract / Ungroup
 // ================================
 field.addEventListener("contextmenu", e => {
     e.preventDefault();

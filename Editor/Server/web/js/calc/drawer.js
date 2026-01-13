@@ -1,4 +1,4 @@
-/* ================= ドロワー（パレット）操作 ================= */
+/* ================= Drawer (Palette) Operations ================= */
 
 const drawer = document.getElementById('drawer');
 const toggleBtn = document.getElementById('drawer-toggle');
@@ -12,7 +12,7 @@ toggleBtn.addEventListener('click', () => {
 });
 
 /**
- * ブロック生成ユーティリティ（ドロワー用）
+ * Block Generation Utility (for Drawer)
  */
 function createDrawerBlock(text, type, dataAttr = {}, descText = "", parent = drawer) {
     const block = document.createElement('div');
@@ -32,11 +32,12 @@ function createDrawerBlock(text, type, dataAttr = {}, descText = "", parent = dr
         if (dataAttr.func && typeof FUNC_CONFIG !== 'undefined') {
             descText = FUNC_CONFIG[dataAttr.func]?.desc || "";
         } else if (typeof GENERAL_DESC !== 'undefined') {
-            descText = GENERAL_DESC[type] || (dataAttr.op ? `演算子: ${dataAttr.op}` : "");
+            // "Operator" refers to mathematical symbols like +, -, etc.
+            descText = GENERAL_DESC[type] || (dataAttr.op ? `Operator: ${dataAttr.op}` : "");
         }
     }
 
-    // iマーク
+    // Info icon ('i' mark)
     if (descText) {
         block.dataset.desc = descText;
         const infoIcon = document.createElement('div');
@@ -71,12 +72,12 @@ function createDrawerBlock(text, type, dataAttr = {}, descText = "", parent = dr
 }
 
 /**
- * ドロワー生成
+ * Drawer Generation
  */
 
-// 1. ドロワーからの生成イベント
+// 1. Event for generating blocks from the drawer
 drawer.addEventListener('mousedown', e => {
-    // iマークは無視
+    // Ignore the info icon
     if (e.target.closest('.info-icon')) return;
 
     const target = e.target.closest('.drawer-block');
@@ -97,12 +98,12 @@ drawer.addEventListener('mousedown', e => {
         initialValue ='$'+target.dataset.id + ' expr' ||''
     }
 
-    // block.js の関数呼び出し
+    // Call function from block.js
     if (typeof createBlock === 'function') {
         const newBlock = createBlock(type, initialValue, true, op, expr);
         placeBlockAtMouse(e, newBlock);
         
-        // drag.js の関数呼び出し
+        // Call function from drag.js
         if (typeof startDrag === 'function') {
             startDrag(e, newBlock);
         }
@@ -119,7 +120,7 @@ function placeBlockAtMouse(e, block) {
     block.style.top  = `${y}px`;
 }
 
-// 2. コンテンツ構築
+// 2. Build Content
 singleBlock.forEach(block => {
     createDrawerBlock(block.Name, block.type);
 });
@@ -130,14 +131,14 @@ storageContainer.style.padding = "5px 0";
 storageContainer.style.display = "none"; 
 drawer.appendChild(storageContainer);
 
-// 演算子                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+// Operators                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 operators.forEach(group => {
     group.list.forEach(op => {
         createDrawerBlock(op, group.type, { op: op });
     });
 });
 
-// 関数ブロック (config.jsのFUNC_CONFIGから生成)
+// Function blocks (generated from FUNC_CONFIG in config.js)
 if (typeof FUNC_CONFIG !== 'undefined') {
     Object.entries(FUNC_CONFIG).forEach(([funcName, conf]) => {
         const label = getFuncLabel(funcName, conf);
@@ -162,13 +163,13 @@ function getFuncLabel(name, conf) {
     return `${name}( ${slots.join(', ')} )`;
 }
 
-/* --- js/calc/drawer.js の window.renderDrawerStorage 部分 --- */
+/* --- window.renderDrawerStorage part of js/calc/drawer.js --- */
 
 window.renderDrawerStorage = function(list) {
     const storageContainer = document.getElementById('drawer-storage-container');
     if (!storageContainer) return;
 
-    // 1. 中身をクリア
+    // 1. Clear contents
     storageContainer.innerHTML = '';
 
     if (!list || list.length === 0) {
@@ -178,10 +179,10 @@ window.renderDrawerStorage = function(list) {
 
     storageContainer.style.display = 'block';
 
-    // 2. Fragment（仮想のコンテナ）を作成す
+    // 2. Create Fragment (virtual container)
     const fragment = document.createDocumentFragment();
 
-    // リストの生成
+    // Generate list
     list.forEach(item => {
         const displayText = `$${item.id} expr`;
 

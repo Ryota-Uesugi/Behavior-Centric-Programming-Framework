@@ -1,72 +1,72 @@
 import ast
 import re
 
-# --- 1. 型の定数定義 ---
+# --- 1. Type Constant Definitions ---
 TYPE_NUMBER = "number"
 TYPE_BOOLEAN = "boolean"
-TYPE_STRING = "string"       # 文字列型
+TYPE_STRING = "string"       # String type
 TYPE_ANY = "any"
-TYPE_WINDOW = "window"       # 時間窓用（数値定数のみ許可）
-TYPE_VALUE_ONLY = "raw_val"  # 履歴が必要な関数用（属性アクセスのみ許可）
+TYPE_WINDOW = "window"       # For time windows (numeric constants only)
+TYPE_VALUE_ONLY = "raw_val"  # For functions requiring history (attribute access only)
 
-# --- 2. 関数設定 ---
-# category: 関数の分類
-# inputs: 引数ごとの期待される型
-# output: 戻り値の型
+# --- 2. Function Configuration ---
+# category: Function classification
+# inputs: Expected types for each argument
+# output: Return value type
 FUNC_CONFIG = {
     # ==========================================
-    # ドローン制御関数 (Control Functions)
+    # Drone Control Functions
     # ==========================================
-    # 離陸: takeoff(高度[m])
+    # Takeoff: takeoff(altitude[m])
     "takeoff": {
         "category": "control_func",
         "inputs": [TYPE_NUMBER],
         "output": TYPE_BOOLEAN
     },
-    # 着陸: land()
+    # Land: land()
     "land": {
         "category": "control_func",
         "inputs": [],
         "output": TYPE_BOOLEAN
     },
-    # アーム: arm()
+    # Arm: arm()
     "arm": {
         "category": "control_func",
         "inputs": [],
         "output": TYPE_BOOLEAN
     },
-    # ディスアーム: disarm()
+    # Disarm: disarm()
     "disarm": {
         "category": "control_func",
         "inputs": [],
         "output": TYPE_BOOLEAN
     },
-    # モード変更: set_mode("GUIDED"など)
+    # Set Mode: set_mode("GUIDED", etc.)
     "set_mode": {
         "category": "control_func",
         "inputs": [TYPE_STRING],
         "output": TYPE_BOOLEAN
     },
-    # 速度制御: set_velocity(vx, vy, vz, yaw_rate)
+    # Velocity Control: set_velocity(vx, vy, vz, yaw_rate)
     "set_velocity": {
         "category": "control_func",
         "inputs": [TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER],
         "output": TYPE_BOOLEAN
     },
-    # 位置制御: goto(x, y, z, yaw)
+    # Position Control: goto(x, y, z, yaw)
     "goto": {
         "category": "control_func",
         "inputs": [TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER],
         "output": TYPE_BOOLEAN
     },
-    # 汎用コマンド: command(id, p1, p2, p3, p4, p5, p6, p7)
+    # General Command: command(id, p1, p2, p3, p4, p5, p6, p7)
     "command": {
         "category": "control_func",
         "inputs": [TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER],
         "output": TYPE_BOOLEAN
     },
 
-    # --- 算術・計算関数 ---
+    # --- Arithmetic/Calculation Functions ---
     "clamp":    {"category": "calc_func", "inputs": [TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER], "output": TYPE_NUMBER},
     "within":   {"category": "calc_func", "inputs": [TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER], "output": TYPE_BOOLEAN},
     "round":    {"category": "calc_func", "inputs": [TYPE_NUMBER, TYPE_NUMBER], "output": TYPE_NUMBER},
@@ -78,7 +78,7 @@ FUNC_CONFIG = {
     "is_nan":   {"category": "calc_func", "inputs": [TYPE_NUMBER], "output": TYPE_BOOLEAN},
     "hysteresis": {"category": "calc_func", "inputs": [TYPE_NUMBER, TYPE_NUMBER, TYPE_NUMBER], "output": TYPE_BOOLEAN},
     
-    # --- 履歴統計関数 ---
+    # --- History/Statistics Functions ---
     "average":  {"category": "time_func", "inputs": [TYPE_VALUE_ONLY, TYPE_WINDOW], "output": TYPE_NUMBER},
     "sum":      {"category": "time_func", "inputs": [TYPE_VALUE_ONLY, TYPE_WINDOW], "output": TYPE_NUMBER},
     "min":      {"category": "time_func", "inputs": [TYPE_VALUE_ONLY, TYPE_WINDOW], "output": TYPE_NUMBER},
@@ -90,10 +90,7 @@ FUNC_CONFIG = {
     "hold":     {"category": "time_func", "inputs": [TYPE_VALUE_ONLY, TYPE_WINDOW], "output": TYPE_BOOLEAN},
     "prev":     {"category": "time_func", "inputs": [TYPE_VALUE_ONLY, TYPE_WINDOW], "output": TYPE_ANY},
 
-    # --- 特殊関数 ---
-    "timer":    {"category": "time_func", "inputs": [TYPE_ANY, TYPE_WINDOW], "output": TYPE_ANY},
-    
-    # --- Export系関数 ---
+    # --- Export Functions ---
     "export_txt": {
         "category": "export_func",
         "inputs": [TYPE_ANY, TYPE_STRING, TYPE_STRING], 
@@ -107,7 +104,7 @@ FUNC_CONFIG = {
 }
 
 
-# --- 3. 演算子の定義 ---
+# --- 3. Operator Definitions ---
 ARITHMETIC_OPS = {
     ast.Add: "+", ast.Sub: "-", ast.Mult: "*", ast.Div: "/",
     ast.Mod: "%", ast.Pow: "**", ast.LShift: "<<", ast.RShift: ">>",
@@ -120,7 +117,7 @@ COMPARISON_OPS = {
 LOGICAL_OPS = {ast.And: "and", ast.Or: "or"}
 ALLOWED_UNARY = {ast.USub: "-", ast.UAdd: "+", ast.Not: "not", ast.Invert: "~"}
 
-# --- 4. 型検証ヘルパー ---
+# --- 4. Type Validation Helper ---
 def _validate_context(node: dict, expected_type: str, op_name: str = "operation"):
     if expected_type == TYPE_ANY:
         return
@@ -134,12 +131,12 @@ def _validate_context(node: dict, expected_type: str, op_name: str = "operation"
         return
 
     if node["return_type"] != expected_type:
-        raise ValueError(f"型エラー: '{op_name}' は {expected_type} を期待していますが、{node['return_type']} が指定されました。")
+        raise ValueError(f"Type Error: '{op_name}' expects {expected_type}, but {node['return_type']} was provided.")
 
 
 def parse_expression(expr: str):
     if not expr or not expr.strip():
-        raise ValueError("式が空です。")
+        raise ValueError("Expression is empty.")
     
     processed_expr = re.sub(r'\bif\s*\(', 'if_run(', expr.strip())
 
@@ -147,33 +144,33 @@ def parse_expression(expr: str):
         tree = ast.parse(processed_expr, mode="eval")
         return _convert(tree.body)
     except SyntaxError as e:
-        raise ValueError(f"式の構文が正しくありません (位置 {e.offset}): {e.msg}")
+        raise ValueError(f"Invalid expression syntax (position {e.offset}): {e.msg}")
 
 def _convert(node):
-    # 1. 定数
+    # 1. Constants
     if isinstance(node, ast.Constant):
         val = node.value
         if isinstance(val, bool): v_type = TYPE_BOOLEAN
         elif isinstance(val, (int, float)): v_type = TYPE_NUMBER
         elif isinstance(val, str): v_type = TYPE_STRING
-        else: raise ValueError(f"未対応のデータ型です: {type(val)}")
+        else: raise ValueError(f"Unsupported data type: {type(val)}")
         return {"type": "constant", "value_type": v_type, "value": val, "return_type": v_type}
 
-    # 2. 属性アクセス
+    # 2. Attribute Access
     if isinstance(node, ast.Attribute):
         if not isinstance(node.value, ast.Name):
-            raise ValueError("属性アクセス形式が不正です。")
+            raise ValueError("Invalid attribute access format.")
         return {"type": "value", "messageType": node.value.id, "field": node.attr, "return_type": TYPE_NUMBER}
 
-    # 3. 名前
+    # 3. Names
     if isinstance(node, ast.Name):
         return {"type": "name", "id": node.id, "return_type": TYPE_ANY}
 
-    # 4. 二項演算
+    # 4. Binary Operations
     if isinstance(node, ast.BinOp):
         op_type = type(node.op)
         if op_type not in ARITHMETIC_OPS:
-            raise ValueError(f"未対応の演算子です: {op_type}")
+            raise ValueError(f"Unsupported operator: {op_type}")
         
         left = _convert(node.left)
         right = _convert(node.right)
@@ -190,15 +187,15 @@ def _convert(node):
             "right": right
         }
 
-    # 5. 比較演算
+    # 5. Comparison Operations
     if isinstance(node, ast.Compare):
         if len(node.ops) > 1:
-            raise ValueError("比較演算の連結は許可されていません。")
+            raise ValueError("Chained comparison operators are not allowed.")
         
         op_type = type(node.ops[0])
         op_str = ARITHMETIC_OPS.get(op_type) or COMPARISON_OPS.get(op_type)
         if not op_str:
-            raise ValueError(f"未対応の比較演算子です。")
+            raise ValueError(f"Unsupported comparison operator.")
             
         left = _convert(node.left)
         right = _convert(node.comparators[0])
@@ -214,7 +211,7 @@ def _convert(node):
             "right": right
         }
 
-    # 6. 論理演算
+    # 6. Logical Operations
     if isinstance(node, ast.BoolOp):
         op_str = LOGICAL_OPS[type(node.op)]
         values = [_convert(v) for v in node.values]
@@ -231,7 +228,7 @@ def _convert(node):
             }
         return res
 
-    # 7. 単項演算
+    # 7. Unary Operations
     if isinstance(node, ast.UnaryOp):
         op_str = ALLOWED_UNARY[type(node.op)]
         operand = _convert(node.operand)
@@ -252,18 +249,18 @@ def _convert(node):
             "node": operand
         }
 
-    # 8. 関数呼び出し
+    # 8. Function Calls
     if isinstance(node, ast.Call):
         if not isinstance(node.func, ast.Name):
-            raise ValueError("不正な関数形式です。")
+            raise ValueError("Invalid function format.")
         
         func_name = node.func.id
         args = [_convert(a) for a in node.args]
 
-        # --- if文 (flow_control) ---
+        # --- If Statement (flow_control) ---
         if func_name == "if_run":
             if len(args) != 3:
-                raise ValueError(f"if文は3つの引数(条件, true時, false時)が必要です。")
+                raise ValueError(f"The 'if' statement requires 3 arguments (condition, true_case, false_case).")
             
             _validate_context(args[0], TYPE_BOOLEAN, "if-condition")
 
@@ -277,7 +274,7 @@ def _convert(node):
             else:
                 final_ret = TYPE_ANY
 
-            # args は最後
+            # args are added last
             return {
                 "type": "flow_control",
                 "name": "if", 
@@ -285,22 +282,22 @@ def _convert(node):
                 "args": args
             }
 
-        # --- 通常関数 ---
+        # --- Standard Function ---
         conf = FUNC_CONFIG.get(func_name)
 
         if not conf:
-            raise ValueError(f"未定義の関数です: {func_name}")
+            raise ValueError(f"Undefined function: {func_name}")
 
         if len(conf["inputs"]) != len(args):
-            raise ValueError(f"関数 '{func_name}' は {len(conf['inputs'])} 個の引数が必要ですが、{len(args)} 個渡されました。")
+            raise ValueError(f"Function '{func_name}' requires {len(conf['inputs'])} arguments, but {len(args)} were provided.")
 
         for i, (expected, arg_node) in enumerate(zip(conf["inputs"], args)):
             if expected == TYPE_WINDOW:
                 if arg_node["type"] != "constant" or arg_node["return_type"] != TYPE_NUMBER:
-                    raise ValueError(f"関数 '{func_name}' の第{i+1}引数(Window)には数値を指定してください。")
+                    raise ValueError(f"Argument {i+1} (Window) of function '{func_name}' must be a number.")
             elif expected == TYPE_VALUE_ONLY:
                 if arg_node["type"] != "value":
-                    raise ValueError(f"関数 '{func_name}' の第{i+1}引数はフィールド直接指定のみ可能です。")
+                    raise ValueError(f"Argument {i+1} of function '{func_name}' allows only direct field specification.")
             elif expected != TYPE_ANY:
                 _validate_context(arg_node, expected, f"{func_name} arg{i+1}")
 
@@ -308,7 +305,7 @@ def _convert(node):
         if final_ret == TYPE_ANY:
             final_ret = args[0]["return_type"]
 
-        # 【変更】辞書の構築順序を制御し、argsが最後に来るようにする
+        # [Change] Control dictionary construction order so 'args' comes last
         result = {
             "type": "func", 
             "name": func_name, 
@@ -316,13 +313,13 @@ def _convert(node):
             "return_type": final_ret
         }
         
-        # window情報がある場合はargsより先に追加
+        # If there is window information, add it before args
         if conf["category"] == "time_func":
             result["window"] = args[-1]["value"]
         
-        # argsを最後に追加
+        # Add args last
         result["args"] = args
                 
         return result
 
-    raise ValueError(f"許可されていない構文要素です: {type(node).__name__}")
+    raise ValueError(f"Unauthorized syntax element: {type(node).__name__}")

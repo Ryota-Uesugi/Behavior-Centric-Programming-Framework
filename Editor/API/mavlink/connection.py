@@ -6,14 +6,17 @@ from config import CONNECTION_STRING, MAVLINK_RECONNECT_INTERVAL
 def connect(app):
     try:
         app.mavlink = mavutil.mavlink_connection(CONNECTION_STRING)
-        logger.info("MAVLink接続待機中...")
+        # Log: Waiting for connection
+        logger.info("Waiting for MAVLink connection...") 
         app.mavlink.wait_heartbeat(timeout=10)
         enable_streams(app.mavlink)
-        logger.info("MAVLink接続成功")
+        # Log: Connection successful
+        logger.info("MAVLink connection successful")
     except Exception:
         app.mavlink = None
         time.sleep(MAVLINK_RECONNECT_INTERVAL)
-        logger.exception("MAVLink接続失敗")
+        # Log: Connection failed (with exception traceback)
+        logger.exception("MAVLink connection failed")
 
 def enable_streams(mav):
     streams = {
