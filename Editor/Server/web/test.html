@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>AST Visualizer (Flowchart Style)</title>
+    <style>
+        /* --- 基本レイアウト --- */
+        body {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', monospace;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        #ast-panel {
+            flex: 3; /* チャートエリアを広く取る */
+            padding: 40px;
+            overflow: auto; /* スクロール可能に */
+            background-color: #282c34;
+            border-right: 1px solid #111;
+            /* パターン背景（オプション） */
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #log-panel {
+            flex: 1;
+            padding: 10px;
+            background: #121212;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+            font-size: 0.8rem;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            min-width: 300px;
+        }
+
+        /* --- フローチャート/ツリー CSS --- */
+        
+        /* 全体のコンテナ */
+        .process-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 60px;
+            min-width: max-content; /* 横幅が切れないように */
+        }
+
+        /* .tree-branch: 
+           1つのノードとその子孫全体を含むラッパー 
+           (従来の .tree-node に相当)
+        */
+        .tree-branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 10px;
+            position: relative;
+        }
+
+        /* .children-row:
+           子ノード（tree-branch）を横並びにするコンテナ
+        */
+        .children-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 20px; /* 親との距離 */
+            position: relative;
+        }
+
+        /* ノード本体（ボックス）のデザイン */
+        .node-content {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #4b5263;
+            background: #21252b;
+            color: #dcdfe4;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            z-index: 2; /* 線より上に表示 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            white-space: nowrap;
+            min-width: 60px;
+        }
+
+        .node-content:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+            border-color: #61afef;
+        }
+
+        /* テキスト装飾 */
+        .node-type { color: #c678dd; font-weight: bold; display: block; font-size: 0.9em; margin-bottom: 2px;}
+        .node-val { color: #98c379; font-size: 1.0em; font-weight: bold; }
+        .node-meta { color: #5c6370; font-size: 0.75em; display: block; margin-top: 2px; }
+
+        /* --- 接続線 (Lines) の描画 --- */
+        
+        /* 親から子への縦線 (children-rowの上に描画) */
+        .children-row::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 0;
+            height: 20px; /* ノードの下から子供の上までの距離 */
+            border-left: 2px solid #4b5263;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+
+        /* 各ブランチ（子）の上の線と横棒 */
+        .tree-branch::before, .tree-branch::after {
+            content: '';
+            position: absolute;
+            top: -20px; /* 親のchildren-rowのpaddingと同じ */
+            right: 50%;
+            border-top: 2px solid #4b5263;
+            width: 50%;
+            height: 20px;
+            z-index: 0;
+        }
+        
+        .tree-branch::after {
+            right: auto; 
+            left: 50%;
+            border-left: 2px solid #4b5263;
+        }
+
+        /* 特別なケース: 最初の子、最後の子、一人っ子の線処理 */
+        .tree-branch:only-child::after, .tree-branch:only-child::before {
+            display: none; /* 一人っ子は横棒不要 */
+        }
+        .tree-branch:only-child { 
+            padding-top: 0; 
+        }
+        /* 一人っ子でも親への縦線は必要（自身のパディングではなく、::beforeで作る） */
+        .tree-branch:only-child::before {
+            display: block;
+            width: 0;
+            right: auto; left: 50%;
+            border-left: 2px solid #4b5263;
+            height: 20px;
+            top: -20px;
+        }
+
+        /* 最初の子: 左側の横棒を消す */
+        .tree-branch:first-child::before {
+            border: 0 none;
+        }
+        /* 親への縦線を追加 (右半分だけ線を引くため、::afterの左線を活用) */
+        .tree-branch:first-child::after {
+            border-radius: 5px 0 0 0; /* 角を丸くする小技 */
+        }
+
+        /* 最後の子: 右側の横棒を消す */
+        .tree-branch:last-child::after {
+            border: 0 none;
+        }
+        .tree-branch:last-child::before {
+            border-right: 2px solid #4b5263; /* ::beforeの右境界を縦線にする */
+            border-radius: 0 5px 0 0;
+        }
+
+        /* --- ハイライト --- */
+        .highlight {
+            background-color: #e5c07b !important;
+            color: #1e1e1e !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 20px rgba(229, 192, 123, 0.8);
+            transform: scale(1.15) !important;
+            z-index: 100;
+        }
+        .highlight .node-type, .highlight .node-val, .highlight .node-meta {
+            color: #000 !important;
+        }
+
+        /* ログパネル */
+        .log-entry { 
+            border-bottom: 1px solid #333; 
+            padding: 6px 4px; 
+            font-family: 'Consolas', monospace;
+            word-break: break-all;
+        }
+        .log-trace { color: #abb2bf; }
+        .log-result { color: #98c379; font-weight: bold; border-left: 3px solid #98c379; padding-left: 5px; }
+        .log-debug { color: #56b6c2; font-size: 0.8rem; }
+        .log-error { color: #e06c75; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="ast-panel">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 1000; background: rgba(40,44,52,0.9); padding: 10px; border-radius: 8px;">
+            <h3 style="margin:0; color: #61afef;">AST Flowchart</h3>
+            <div>
+                <button onclick="fetchAST()" style="cursor: pointer; padding: 5px 15px; background: #61afef; border: none; border-radius: 4px; color: #fff; font-weight: bold;">Reload AST</button>
+            </div>
+        </div>
+        <div id="ast-container" style="text-align: center;">Waiting for data...</div>
+    </div>
+
+    <div id="log-panel"></div>
+
+    <script>
+        const PORT = 5000; 
+        const WS_URL = `ws://localhost:${PORT}/ws/events`;
+        const API_AST_URL = `http://localhost:${PORT}/api/ast`; 
+
+        const astContainer = document.getElementById('ast-container');
+        const logPanel = document.getElementById('log-panel');
+        
+        let activeNodeId = null;
+        let isFetching = false;
+
+        console.log("=== Visualizer Started ===");
+
+        // --- 1. AST取得と描画 ---
+        async function fetchAST() {
+            if (isFetching) return;
+            isFetching = true;
+            console.log("[Fetch] Starting AST fetch...");
+
+            try {
+                // スクロール位置の保持は構造変化が激しいためリセットまたは維持
+                const res = await fetch(API_AST_URL);
+                const data = await res.json();
+                
+                astContainer.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    astContainer.textContent = "No AST data found.";
+                } else {
+                    data.forEach(proc => {
+                        const procDiv = document.createElement('div');
+                        procDiv.className = 'process-container';
+                        procDiv.innerHTML = `<h4 style="margin:0 0 20px 0; padding: 5px 10px; background: #3e4451; border-radius: 15px; color:#c678dd; display:inline-block;">Process: ${proc.name}</h4>`;
+                        procDiv.appendChild(renderNode(proc.ast, "root"));
+                        astContainer.appendChild(procDiv);
+                    });
+                }
+
+            } catch (e) {
+                console.error("[Fetch] Error:", e);
+                addLog(`Fetch Error: ${e.message}`, "red", "log-error");
+            } finally {
+                isFetching = false;
+            }
+        }
+
+        // 再帰的にノードを描画する関数（構造を変更）
+        function renderNode(node, path) {
+            if (!node) return document.createTextNode('');
+
+            // tree-branch: このノード以下のサブツリー全体を囲む
+            const branchContainer = document.createElement('div');
+            branchContainer.className = 'tree-branch';
+
+            // node-content: ノードそのものの表示
+            const content = document.createElement('div');
+            content.className = 'node-content';
+            
+            const domId = `node-${path}`;
+            content.id = domId;
+            content.title = `Path: ${path}`; 
+
+            // ラベル生成
+            let labelHtml = `<span class="node-type">${node.type || 'Unknown'}</span>`;
+            
+            if (node.value !== undefined) {
+                labelHtml += `<span class="node-val">${node.value}</span>`;
+            } else if (node.name) {
+                labelHtml += `<span class="node-val">"${node.name}"</span>`;
+            } else if (node.op) {
+                labelHtml += `<span class="node-val">${node.op}</span>`;
+            }
+
+            content.innerHTML = labelHtml;
+            branchContainer.appendChild(content);
+
+            // 子要素のコンテナ (children-row)
+            // フレックスボックスで横並びにする
+            const childrenRow = document.createElement('div');
+            childrenRow.className = 'children-row';
+            
+            let hasChildren = false;
+
+            // args (引数)
+            if (node.args && Array.isArray(node.args)) {
+                node.args.forEach((arg, i) => {
+                    childrenRow.appendChild(renderNode(arg, `${path}/args/${i}`));
+                    hasChildren = true;
+                });
+            }
+            
+            // left, right, node (その他の再帰的プロパティ)
+            ['left', 'right', 'node', 'body', 'test', 'consequent', 'alternate'].forEach(key => {
+                if (node[key] && typeof node[key] === 'object') {
+                    // 配列の場合（bodyなど）
+                    if (Array.isArray(node[key])) {
+                        node[key].forEach((child, i) => {
+                             childrenRow.appendChild(renderNode(child, `${path}/${key}/${i}`));
+                        });
+                        if (node[key].length > 0) hasChildren = true;
+                    } 
+                    // オブジェクトの場合
+                    else {
+                        childrenRow.appendChild(renderNode(node[key], `${path}/${key}`));
+                        hasChildren = true;
+                    }
+                }
+            });
+
+            if (hasChildren) {
+                branchContainer.appendChild(childrenRow);
+            }
+
+            return branchContainer;
+        }
+
+        // --- 2. WebSocket処理 ---
+        const socket = new WebSocket(WS_URL);
+
+        socket.onopen = () => {
+            console.log("[WS] Connected.");
+            addLog("System connected to WebSocket.", "#666");
+        };
+
+        socket.onclose = (e) => addLog(`System disconnected (Code: ${e.code}).`, "#e06c75");
+        socket.onerror = (e) => console.error("[WS] Error:", e);
+
+        socket.onmessage = async (event) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'STEP_NOTIFY' || data.signal === 'STEP_NOTIFY' || data.type === 'trace') {
+                    const nodeId = data.node_id; 
+                    const value = data.value;
+                    const nodeType = data.node_type || data.name || data.type;
+
+                    if (nodeId) {
+                        await highlightNodeWithRetry(nodeId, value);
+                    }
+                    
+                    addLog(`[STEP] ${nodeType}: ${formatValue(value)}`, null, 'log-trace');
+                } 
+                else if (data.signal === 'TRANSITION') {
+                    addLog(`[STATE] Transition to ${data.state}`, "#d19a66", 'log-result');
+                }
+                else {
+                    addLog(`[MSG] ${data.type || 'Unknown'}`, "#555", "log-debug");
+                }
+            } catch (e) {
+                console.error("[WS Message Error]", e);
+            }
+        };
+
+        async function highlightNodeWithRetry(pathId, value) {
+            const targetDomId = `node-${pathId}`;
+            let el = document.getElementById(targetDomId);
+
+            if (!el) {
+                console.warn(`[Highlight] Element #${targetDomId} NOT found. Reloading AST...`);
+                await fetchAST();
+                el = document.getElementById(targetDomId);
+            }
+
+            if (el) {
+                if (activeNodeId) {
+                    const prev = document.getElementById(`node-${activeNodeId}`);
+                    if (prev) prev.classList.remove('highlight');
+                }
+
+                el.classList.add('highlight');
+                
+                // フローチャート内でのスムーズスクロール（中央寄せ）
+                el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+                
+                activeNodeId = pathId;
+            }
+        }
+
+        function addLog(msg, color, className) {
+            const div = document.createElement('div');
+            div.className = 'log-entry ' + (className || '');
+            const timeStr = new Date().toLocaleTimeString().split(' ')[0];
+            div.innerHTML = `<span style="color:#555; margin-right:5px;">${timeStr}</span> ${msg}`;
+            if (color) div.style.color = color;
+            logPanel.insertBefore(div, logPanel.firstChild);
+            if (logPanel.children.length > 200) logPanel.removeChild(logPanel.lastChild);
+        }
+
+        function formatValue(val) {
+            if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+            if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+            return val;
+        }
+
+        fetchAST();
+    </script>
+</body>
+</html>
