@@ -1,63 +1,76 @@
-# 🚁 DBAP (Drone Behavior Analyzing Platform)
+# 🚁 Drone Behavior Analyzing Platform (DBAP)
 
-[cite_start]DBAPは、デジタルツインバックエンドを備えたドローンシステム向けの振る舞い中心プログラミングフレームワークです [cite: 1, 2, 37]。
-[cite_start]開発者が天候や通信などの非機能要件に煩わされることなく、ドローンのコアな振る舞いの開発に集中できる環境を提供します [cite: 51, 52]。
+[cite_start]DBAP is a behavior-centric programming framework for drone systems with digital twin backends[cite: 1, 2, 48]. [cite_start]This platform aims to provide a comfortable development environment for exploratory programming by allowing developers to focus on the mainstream behavior of physical systems while managing complex non-functional requirements[cite: 32, 51, 53]. 
 
-## ✨ 主な機能 (Key Features)
+## ✨ Key Research Features
 
-* [cite_start]**動的なマルチビュー (Dynamic Multiple Views)**: プログラムを変更すると、複数のビュー（3Dモニター、グラフ、テレメトリリスト）で同時にシステムの振る舞いの変化を観察できます [cite: 33, 99]。
-* [cite_start]**ライブ性と適合性 (Liveness and Conformity)**: 実行前にプログラムが意図した通りかを確認でき、煩わしい操作なしに即座にシステムへ反映されます [cite: 34, 35]。
-* [cite_start]**実機とシミュレータのシームレスな統合**: MAVLinkプロトコルを採用しており、1つのプログラムを実機のドローン（ArduPilot）でも、デジタルツイン（Hakoniwa/Unity）でもそのまま実行可能です [cite: 36, 40, 41]。
+[cite_start]This framework specifically addresses three major challenges in physical system development[cite: 69]:
+
+* [cite_start]**Dynamic Multiple Views:** When you change a program, you can observe its behavior in multiple views simultaneously, and the behavior of each view changes in real-time[cite: 33, 70, 432].
+* [cite_start]**Liveness and Conformity:** Developers can check whether the program matches their intended image before execution to confirm conformity[cite: 34, 71, 72, 434, 435]. [cite_start]The program then executes immediately without any bothersome actions to satisfy liveness[cite: 35, 73, 436].
+* [cite_start]**Real Drone & Digital Twin Execution:** A single program can execute seamlessly on both a digital twin (such as Hakoniwa and Unity-based simulators) and the real world (such as ArduPilot)[cite: 36, 41, 74, 79, 437]. [cite_start]This is achieved using MAVLink, the communication protocol for unmanned systems[cite: 40, 78, 165].
 
 ---
 
-## 🏗️ システムアーキテクチャ (System Architecture)
+## 🏗️ System Architecture
 
-[cite_start]本プラットフォームは大きく3つのモジュールで構成されており、バックエンドのPythonシステムとフロントエンドのWebアプリケーションが連携して動作します [cite: 92]。
+[cite_start]The DBAP framework consists of three main modules designed to ensure liveness and provide dynamic multiple views[cite: 90, 92].
 
-| モジュール名 | 該当ディレクトリ | 役割と概要 |
+| Core Module | Directory Mapping | Description |
 | :--- | :--- | :--- |
-| **DBAP Kernel** | `API/`, `Engine/` | [cite_start]ユーザー定義の解析式を評価し、テレメトリのリアルタイム処理と論理判定を行うコアシステムです [cite: 93, 94, 95]。 |
-| **Data Capture** | `mavlink/` | [cite_start]実機、SITLシミュレーション、またはログからMAVLinkテレメトリを収集しストリーム化します [cite: 181, 182, 183, 184]。 |
-| **Check & Parse** | `parser/` | [cite_start]エディタから送信された式を解析・型チェックし、抽象構文木 (AST) に変換します [cite: 188]。 |
-| **通信 & サーバー** | `Server/`, `ws/` | [cite_start]REST APIによる式の受信と、WebSocketを介した3Dモニターへのデータ配信を行います [cite: 133, 135, 209]。 |
-| **Blocky Editor** | `Server/web/js/block/` | [cite_start]ブラウザ上で動作するドメイン固有の視覚的ブロックプログラミングエディタです [cite: 37, 101]。 |
-| **3D Real-time Monitor**| `Server/web/js/monitor/`| [cite_start]3D空間でのドローンの挙動やテレメトリデータ、計算結果をリアルタイムに視覚化します [cite: 98, 99, 100]。 |
+| **DBAP Kernel** | `API/`, `Engine/` | [cite_start]A Python application running on a Ground Control Station (GCS) PC[cite: 97]. [cite_start]It applies user-defined analysis expressions to MAVLink telemetry to compute physical quantities and logical judgments[cite: 94]. |
+| **Blocky Editor** | `Server/web/js/block/` | [cite_start]A domain-specific visual block programming language editor running in a web browser[cite: 37, 75, 101]. [cite_start]It assists users in defining analysis expressions for telemetry analysis[cite: 102]. |
+| **3D Real-time Monitor** | `Server/web/js/monitor/` | [cite_start]A web-based user interface that visualizes the drone in 3D, lists telemetry data, and displays computed results simultaneously[cite: 98, 99]. |
 
 ---
 
-## 📁 フォルダ構成 (Directory Structure)
+## ⚙️ Kernel Internal Mechanisms
+
+[cite_start]The DBAP Kernel serves as the central hub and is divided into three critical subsystems[cite: 170, 171]:
+
+* [cite_start]**Data Capture (`mavlink/`):** Collects MAVLink telemetry from a real drone, a Software In The Loop (SITL) simulation, or pre-recorded logs[cite: 172, 181, 182, 183, 184]. [cite_start]It converts this data into a suitable format for streaming and analysis[cite: 172].
+* [cite_start]**Check & Parse (`parser/`):** Translates visual block expressions into an internal tree-structured intermediate representation, known as an Abstract Syntax Tree (AST)[cite: 174, 176, 188, 194]. [cite_start]It enforces strict type definitions to ensure safe runtime execution[cite: 177, 375].
+* [cite_start]**Runtime Calculate (`Engine/`):** Evaluates the ASTs using real-time telemetry collected by the Data Capture module[cite: 178]. [cite_start]It supports dynamic logic replacement (hot-swapping) without interrupting the system's operation, which is essential for liveness[cite: 199, 219].
+
+---
+
+## 📁 Repository Directory Structure
 
 ```text
 📦 DBAP-Project
- ┣ 📜 launch.py                 # アプリケーションのエントリポイント
- ┣ 📂 API                       # システム全体の設定とREST APIエンドポイント
+ ┣ 📜 launch.py                 # Application entry point
+ ┣ 📂 API                       # System configuration and REST API endpoints
  ┃ ┣ 📜 config.py
  ┃ ┣ 📜 main.py
- ┃ ┗ 📂 api                     # 式のパースや設定保存のAPIロジック
- ┣ 📂 Engine                    # 実行エンジン (Runtime Calculate)
- ┃ ┣ 📜 EvalKernel.py           # 抽象構文木(AST)のリアルタイム評価
- ┃ ┣ 📜 expr_eval.py
- ┃ ┗ 📂 component               # コントローラーや外部出力(エクスポート)機能
- ┣ 📂 mavlink                   # データキャプチャモジュール
- ┃ ┣ 📜 connection.py           # ターゲット(実機/SITL)とのMAVLink接続
- ┃ ┗ 📜 listener.py
- ┣ 📂 parser                    # Check & Parse モジュール
- ┃ ┣ 📜 definitions.py
- ┃ ┣ 📜 definition_parser.py    # 構文チェックとASTへの変換処理
- ┃ ┗ 📜 expr_parser.py
- ┣ 📂 ws                        # WebSocket 通信モジュール
- ┃ ┣ 📜 broadcast.py            # 3Dモニターへのテレメトリ配信
+ ┃ ┗ 📂 api                     # Logic for expression parsing and settings storage
+ ┣ 📂 Engine                    # Runtime Calculate component
+ ┃ ┣ 📜 EvalKernel.py           # Core AST evaluator and control loop manager
+ ┃ ┣ 📜 expr_eval.py            # Expression execution logic
+ ┃ ┗ 📂 component               # Sub-components for functions and output
+ ┃   ┣ 📜 drone_controller.py   # Issues MAVLink commands to the target
+ ┃   ┣ 📜 exporter.py           # Handles external outputs (Graphs, CSVs)
+ ┃   ┗ 📜 func_handlers.py      # Pre-defined function executions
+ ┣ 📂 mavlink                   # Data Capture component
+ ┃ ┣ 📜 connection.py           # Establishes MAVLink protocol communication
+ ┃ ┣ 📜 listener.py             # Receives and filters high-frequency telemetry
+ ┃ ┗ 📜 replay.py               # Replays telemetry from stored logs
+ ┣ 📂 parser                    # Check & Parse component
+ ┃ ┣ 📜 definitions.py          # Type and function definitions
+ ┃ ┣ 📜 definition_parser.py    # Validates input against definitions
+ ┃ ┣ 📜 expr_analysis.py        # Semantic annotation logic
+ ┃ ┗ 📜 expr_parser.py          # AST conversion logic
+ ┣ 📂 ws                        # WebSocket communication layer
+ ┃ ┣ 📜 broadcast.py            # Streams synchronized state data to external monitors
  ┃ ┗ 📜 handler.py
- ┣ 📂 Server                    # Webサーバーモジュール
- ┃ ┣ 📜 Server.py               # フロントエンドのホスティング
- ┃ ┗ 📂 web                     # フロントエンドの静的ファイル
- ┃   ┣ 📜 index.html
- ┃   ┣ 📜 block.html            # Blocky Editor UI
- ┃   ┣ 📂 css
- ┃   ┗ 📂 js
- ┃     ┣ 📂 block               # ブロックUI、パース、ドラッグ＆ドロップ機能
- ┃     ┗ 📂 monitor             # Three.jsを用いた3Dビジュアライザ
- ┣ 📂 logs                      # 実行ログや出力グラフデータ (CSV/PNG)
- ┣ 📂 logs_ws                   # WebSocket通信のログ
- ┗ 📂 settings                  # システム定義や設定ファイル (JSON)
+ ┣ 📂 Server                    # Web Server module
+ ┃ ┣ 📜 Server.py               # Hosts the front-end interfaces
+ ┃ ┗ 📂 web                     # Static web assets
+ ┃   ┣ 📜 index.html            # Main entry page
+ ┃   ┣ 📜 block.html            # The Blocky Editor Workspace
+ ┃   ┣ 📂 css                   # Styling and layout
+ ┃   ┗ 📂 js                    # Client-side application logic
+ ┃     ┣ 📂 block               # Block creation, dragging, dropping, and parsing logic
+ ┃     ┗ 📂 monitor             # Three.js visualizer for 3D drone rendering
+ ┣ 📂 logs                      # Directory for exported analytical results (CSV/PNG)
+ ┣ 📂 logs_ws                   # Websocket telemetry logs
+ ┗ 📂 settings                  # System rule configurations (JSON format)
